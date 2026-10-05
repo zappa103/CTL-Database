@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Campus Room &amp; Equipment Directory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#24291F; --paper:#ECE8DC; --card:#F7F5EE;
+  --brass:#9C6B2E; --brass-light:#C79A56;
+  --blueprint:#2B4257; --blueprint-light:#3E5C74;
+  --flag:#8C4430; --good:#4B6650; --bad:#A43F32; --neutral:#8A8672;
+  --line:#D8D2C0; --line-strong:#B7AF97;
+  --tag-ctl:#4B6650;
+}
+:root:not([data-theme="light"]){ @media (prefers-color-scheme: dark){
+  --ink:#EDEAE0; --paper:#181B15; --card:#20241C;
+  --brass:#D3A458; --brass-light:#E4BE7C;
+  --blueprint:#4A6C89; --blueprint-light:#5E82A0;
+  --line:#33372A; --line-strong:#454B37; --tag-ctl:#7FA187;
+  --good:#7FA187; --bad:#D88072; --neutral:#9C9885;
+}}
+:root[data-theme="dark"]{
+  --ink:#EDEAE0; --paper:#181B15; --card:#20241C;
+  --brass:#D3A458; --brass-light:#E4BE7C;
+  --blueprint:#4A6C89; --blueprint-light:#5E82A0;
+  --line:#33372A; --line-strong:#454B37; --tag-ctl:#7FA187;
+  --good:#7FA187; --bad:#D88072; --neutral:#9C9885;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+.display{font-family:'Fraunces',serif;}
+select,input,textarea,button{font-family:inherit;}
+
+header.band{background:var(--blueprint);color:#F3F1E8;padding:calc(18px + env(safe-area-inset-top,0px)) clamp(16px,4vw,48px) 0;border-bottom:3px solid var(--brass);}
+.band-top{display:flex;align-items:baseline;justify-content:space-between;gap:20px;flex-wrap:wrap;max-width:1240px;margin:0 auto;}
+.band-title{font-size:clamp(19px,2.5vw,26px);font-weight:600;margin:0;}
+.band-sub{font-size:12px;color:#C9D3DA;margin-top:3px;}
+.mode-toggle{display:flex;border:1px solid rgba(255,255,255,.35);border-radius:3px;overflow:hidden;flex-shrink:0;}
+.mode-toggle button{background:transparent;color:#E6EAEC;border:none;padding:8px 13px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;}
+.mode-toggle button.active{background:var(--brass);color:#1D1204;}
+.mode-toggle button:not(.active):hover{background:rgba(255,255,255,.1);}
+.page-tabs{max-width:1240px;margin:14px auto 0;display:flex;gap:4px;}
+.page-tab{background:transparent;border:none;color:#C9D3DA;padding:9px 4px;margin-right:20px;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;opacity:.7;}
+.page-tab.active{color:#fff;opacity:1;border-bottom-color:var(--brass);}
+
+.controls{max-width:1240px;margin:18px auto 0;padding:0 clamp(16px,4vw,48px);display:flex;gap:9px;flex-wrap:wrap;align-items:center;}
+.search-wrap{position:relative;flex:1 1 200px;max-width:300px;}
+.search-wrap input{width:100%;padding:9px 12px 9px 32px;border:1px solid var(--line-strong);border-radius:3px;background:var(--card);color:var(--ink);font-size:13px;}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.55;}
+.dd{padding:9px 10px;border:1px solid var(--line-strong);border-radius:3px;background:var(--card);color:var(--ink);font-size:13px;min-width:135px;}
+.chip{border:1px solid var(--line-strong);background:var(--card);color:var(--ink);padding:7px 12px;border-radius:3px;font-size:12px;cursor:pointer;}
+.chip.active{background:var(--tag-ctl);color:#fff;border-color:var(--tag-ctl);}
+.btn{font-size:12.5px;font-weight:500;padding:8px 14px;border-radius:3px;cursor:pointer;border:1px solid var(--line-strong);background:var(--card);color:var(--ink);}
+.btn.primary{background:var(--brass);border-color:var(--brass);color:#1D1204;}
+.btn.small{padding:5px 10px;font-size:11.5px;}
+.btn.danger{border-color:var(--bad);color:var(--bad);}
+.result-count{margin-left:auto;font-size:12px;opacity:.6;white-space:nowrap;}
+
+main{max-width:1240px;margin:0 auto;padding:18px clamp(16px,4vw,48px) 60px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(252px,1fr));gap:14px;}
+.plaque{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--brass);border-radius:2px;padding:15px 15px 13px;cursor:pointer;text-align:left;position:relative;}
+.plaque:hover{border-top-color:var(--brass-light);}
+.plaque-idline{font-family:'Fraunces',serif;font-size:17.5px;font-weight:600;line-height:1.28;padding-right:70px;}
+.plaque-idline .room{opacity:.9;}
+.status-badge{position:absolute;top:13px;right:13px;font-size:10px;font-weight:600;padding:3px 7px;border-radius:2px;display:flex;align-items:center;gap:4px;}
+.status-dot{width:6px;height:6px;border-radius:50%;display:inline-block;}
+.status-online{background:rgba(75,102,80,.14);color:var(--good);}
+.status-online .status-dot{background:var(--good);}
+.status-offline{background:rgba(164,63,50,.14);color:var(--bad);}
+.status-offline .status-dot{background:var(--bad);}
+.status-none{background:rgba(138,134,114,.14);color:var(--neutral);}
+.status-none .status-dot{background:var(--neutral);}
+.plaque-tags{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;}
+.tag{font-size:10.5px;border:1px solid var(--line-strong);border-radius:2px;padding:2px 6px;opacity:.75;}
+.tag.ctl{color:var(--tag-ctl);border-color:var(--tag-ctl);opacity:1;}
+.plaque-contacts{margin-top:10px;font-size:11.5px;opacity:.7;line-height:1.6;}
+.plaque-contacts b{opacity:.85;font-weight:600;}
+.empty-state{text-align:center;padding:60px 20px;opacity:.6;}
+
+.inline-form{background:var(--card);border:1px dashed var(--line-strong);border-radius:3px;padding:16px;margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+.inline-form label{display:flex;flex-direction:column;font-size:11px;opacity:.65;gap:4px;}
+.inline-form input,.inline-form select{padding:7px 9px;border:1px solid var(--line-strong);border-radius:3px;background:var(--paper);color:var(--ink);font-size:13px;min-width:140px;}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;justify-content:flex-end;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.panel{width:min(600px,100%);height:100%;background:var(--paper);overflow-y:auto;transform:translateX(24px);transition:transform .25s;border-left:3px solid var(--brass);}
+.overlay.open .panel{transform:translateX(0);}
+.panel-head{background:var(--blueprint);color:#F3F1E8;padding:calc(20px + env(safe-area-inset-top,0px)) clamp(20px,3vw,32px) 18px;position:relative;}
+.panel-close{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:18px;background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;width:30px;height:30px;border-radius:3px;cursor:pointer;font-size:16px;}
+.panel-idline{font-family:'Fraunces',serif;font-size:22px;font-weight:600;line-height:1.3;padding-right:40px;}
+.panel-sub{font-size:12.5px;color:#C9D3DA;margin-top:4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.tabs{display:flex;border-bottom:1px solid var(--line);padding:0 clamp(20px,3vw,32px);gap:4px;flex-wrap:wrap;}
+.tab{background:transparent;border:none;padding:12px 4px;margin-right:16px;font-size:12.5px;font-weight:500;color:var(--ink);opacity:.55;cursor:pointer;border-bottom:2px solid transparent;}
+.tab.active{opacity:1;border-bottom-color:var(--brass);}
+.panel-body{padding:18px clamp(20px,3vw,32px) 40px;}
+.spec-section-title{font-size:11px;letter-spacing:.03em;text-transform:uppercase;opacity:.55;margin:18px 0 9px;font-weight:600;display:flex;justify-content:space-between;align-items:center;}
+.spec-section-title:first-child{margin-top:0;}
+.spec-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;}
+.spec-row .k{opacity:.65;flex-shrink:0;}
+.spec-row .v{text-align:right;font-weight:500;}
+.spec-row .v.empty{opacity:.35;font-style:italic;font-weight:400;}
+.spec-row input, .spec-row select{font-size:13px;text-align:right;border:1px solid var(--line-strong);border-radius:2px;padding:5px 8px;background:var(--card);color:var(--ink);width:58%;}
+.locked-note{display:flex;gap:9px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:3px;padding:11px 13px;font-size:12px;opacity:.75;margin:8px 0 4px;}
+.save-bar{position:sticky;bottom:0;background:var(--paper);border-top:1px solid var(--line-strong);padding:14px clamp(20px,3vw,32px);display:flex;justify-content:space-between;gap:10px;}
+.history-item{padding:12px 0;border-bottom:1px solid var(--line);}
+.history-item .who{font-weight:600;font-size:12.5px;}
+.history-item .when{font-size:11px;opacity:.55;margin-left:8px;}
+.history-item .what{font-size:12.5px;margin-top:3px;opacity:.85;}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:4px;}
+.photo-tile{aspect-ratio:4/3;background:linear-gradient(135deg,var(--card),var(--line));border:1px solid var(--line-strong);border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10.5px;opacity:.6;}
+
+.contact-card{background:var(--card);border:1px solid var(--line);border-radius:2px;padding:13px 15px;}
+.contact-card + .contact-card{margin-top:9px;}
+.contact-role{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;opacity:.55;font-weight:600;}
+.contact-name{font-family:'Fraunces',serif;font-size:17px;margin-top:3px;}
+.contact-line{font-size:12.5px;opacity:.8;margin-top:2px;}
+
+.eq-cat-block{margin-bottom:16px;}
+.eq-cat-title{font-size:12px;font-weight:600;opacity:.7;margin-bottom:6px;}
+.eq-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;}
+.eq-item .model{flex:1;}
+.eq-item .qty{opacity:.6;font-size:12px;width:46px;}
+.eq-item select.model-select{flex:1;}
+.eq-item input.qty-input{width:46px;text-align:center;}
+.eq-remove{background:none;border:none;color:var(--bad);cursor:pointer;font-size:15px;padding:0 4px;}
+.add-eq-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.add-eq-row select,.add-eq-row input{padding:6px 8px;border:1px solid var(--line-strong);border-radius:3px;background:var(--card);color:var(--ink);font-size:12.5px;}
+.add-eq-row input.qty-input{width:52px;}
+
+.catalog-section{margin-bottom:24px;}
+.catalog-section h3{font-family:'Fraunces',serif;font-size:18px;font-weight:600;margin:0 0 10px;display:flex;align-items:center;gap:10px;}
+.catalog-count{font-size:11px;opacity:.5;font-weight:400;font-family:'IBM Plex Sans',sans-serif;}
+.catalog-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);}
+.catalog-table th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;opacity:.55;padding:8px 11px;border-bottom:1px solid var(--line-strong);}
+.catalog-table td{padding:8px 11px;font-size:12.5px;border-bottom:1px solid var(--line);}
+.catalog-table tr:last-child td{border-bottom:none;}
+.catalog-table input{width:100%;border:1px solid transparent;background:transparent;color:var(--ink);font-size:12.5px;padding:3px 4px;border-radius:2px;}
+.catalog-table input:hover,.catalog-table input:focus{border-color:var(--line-strong);background:var(--paper);}
+.catalog-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+
+.report-card{background:var(--card);border:1px solid var(--line);border-radius:3px;padding:18px 20px;margin-bottom:16px;}
+.report-card h4{font-family:'Fraunces',serif;font-size:16px;margin:0 0 12px;}
+.report-controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.result-tile{display:flex;gap:20px;margin-top:6px;}
+.result-tile .num{font-family:'Fraunces',serif;font-size:30px;font-weight:600;}
+.result-tile .lbl{font-size:11.5px;opacity:.6;margin-top:2px;}
+.lifecycle-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px;}
+.lifecycle-row .yr{font-weight:600;}
+.lifecycle-row .yr.stale{color:var(--bad);}
+
+.badge-proto{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:14px;background:var(--flag);color:#fff;font-size:10.5px;padding:6px 10px;border-radius:3px;z-index:40;box-shadow:0 2px 8px rgba(0,0,0,.25);max-width:250px;}
+@media (max-width:640px){ .band-top{flex-direction:column;align-items:flex-start;} .result-count{margin-left:0;} }
+</style>
+</head>
+<body>
+
+<header class="band">
+  <div class="band-top">
+    <div>
+      <p class="band-title">Campus Room &amp; Equipment Directory</p>
+      <p class="band-sub">935 rooms &middot; AV status shown here is simulated, pending GVE integration</p>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="View mode">
+      <button id="btn-public" class="active">Public</button>
+      <button id="btn-student">Student Tech</button>
+      <button id="btn-editor">Staff Editor</button>
+    </div>
+  </div>
+  <div class="page-tabs" id="page-tabs" style="display:none;">
+    <button class="page-tab active" data-page="rooms">Rooms</button>
+    <button class="page-tab" data-page="catalog">Equipment Catalog</button>
+    <button class="page-tab" data-page="reports">Reports</button>
+  </div>
+</header>
+
+<main>
+  <div id="page-rooms">
+    <div class="controls">
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        <input id="search" type="text" placeholder="Search building, room, or equipment&hellip;">
+      </div>
+      <select id="dd-building" class="dd"><option value="">All buildings</option></select>
+      <select id="dd-room" class="dd"><option value="">All rooms</option></select>
+      <button class="chip" id="ctl-toggle">CTL-supported only</button>
+      <button class="btn" id="add-room-btn" style="display:none;">+ Add room</button>
+      <div class="result-count" id="result-count"></div>
+    </div>
+    <div id="add-room-form"></div>
+    <div class="grid" id="grid"></div>
+    <div class="empty-state" id="empty" style="display:none;">No rooms match your search.</div>
+  </div>
+  <div id="page-catalog" style="display:none;"></div>
+  <div id="page-reports" style="display:none;"></div>
+</main>
+
+<div class="overlay" id="overlay"><div class="panel" id="panel"></div></div>
+<div class="badge-proto">Design prototype v3 &middot; sample data &amp; simulated statuses, not connected to a live database</div>
+
+<script>const ROOMS = [{"Building":"Cedar Street Building A","Room":"323","Room Type":"Classroom","Department":"","College":"","Primary Support Unit":"Center for Teaching and Learning","Zone":"SLC","_ctl_supported":true,"Seating Capacity":54.0,"Room Square Footage":"","Seating Configuration":"Movable Tables - Movable Chairs","Floor Type":"Level","Notes":"","Latest Update":"2027 - Full Upgrade","Last Update Year":2027,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true}],"_room_online":true,"_photo_count":8,"_contacts":{"CTL Support":{"name":"Taylor Hayes","email":"taylor.hayes@campus.edu","phone":"(706) 555-8847"},"AV Support":{"name":"Elliot Ward","email":"elliot.ward@campus.edu","phone":"(706) 555-9640"},"Department Contact":{"name":"Morgan Santos","email":"morgan.santos@campus.edu","phone":"(706) 555-9247"},"Computer Support":{"name":"Sam Santos","email":"sam.santos@campus.edu","phone":"(706) 555-9655"}}},{"Building":"Forest Resources (1)","Room":"307","Room Type":"","Department":"Forestry","College":"Warnell School of Forestry and Natural Resources","Primary Support Unit":"Warnell School of Forestry and Natural Resources","Zone":"SLC","_ctl_supported":false,"Seating Capacity":20.0,"Room Square Footage":506.0,"Seating Configuration":"Movable Tables - Movable Chairs","Floor Type":"Level","Notes":"","Latest Update":"2014 - Partial Upgrade","Last Update Year":2014,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Custom","qty":1,"online":true},{"category":"Projector","model":"Epson G5450W","qty":1,"online":true},{"category":"Switcher","model":"Extron IN1606","qty":1,"online":false},{"category":"Amplifier","model":"Extron MPA 401","qty":1,"online":true},{"category":"Speaker","model":"Tannoy CVS4","qty":1,"online":true}],"_room_online":false,"_photo_count":3,"_contacts":{"CTL Support":null,"AV Support":{"name":"Parker Ellis","email":"parker.ellis@campus.edu","phone":"(706) 555-7981"},"Department Contact":{"name":"Riley Nguyen","email":"riley.nguyen@campus.edu","phone":"(706) 555-5024"},"Computer Support":{"name":"Casey Reed","email":"casey.reed@campus.edu","phone":"(706) 555-6231"}}},{"Building":"Fine Arts Building","Room":"400","Room Type":"Classroom","Department":"Theatre & Film Studies","College":"Franklin College of Arts and Sciences","Primary Support Unit":"Center for Teaching and Learning","Zone":"North","_ctl_supported":true,"Seating Capacity":272.0,"Room Square Footage":3044.0,"Seating Configuration":"Lecture Seating - Fixed","Floor Type":"Tiered","Notes":"(4) Audio DA - Surround Sound Processor: (2) Audio Flex (in Amp Room) - Shure UA844 UHF Antenna/power distribution system - Gefen Digital Audio S/PDIF Extender R - Gefen Digital Audio S/PDIF Extender T [in cabinet] - Extron SSP 7.1 Surround Sound Processor - (2) Biamp Audia FLEX Configurable Audio DSP - Lab Gruppen C Series C 20:8X Eight-Channel Amplifier - (3) Lab Gruppen C Series C48:4 Four-Channel Amplifier - (2) Extron XPA 2001 70V","Latest Update":"2026 - Complete Upgrade","Last Update Year":2026,"_equipment":[{"category":"Instructor Computer","model":"Mac","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Malone MXT 701","qty":1,"online":true},{"category":"Projector","model":"Panasonic PT-DZ21KU","qty":1,"online":true},{"category":"Projector","model":"Panasonic PTDW740","qty":1,"online":true},{"category":"Touchpanel","model":"AMX MT-1002","qty":1,"online":true},{"category":"Controller","model":"AMX NX-3200","qty":1,"online":true},{"category":"Switcher","model":"Extron DTP CrossPoint 82 4K","qty":1,"online":true},{"category":"Microphone","model":"Lavalier \u2013 Shure ULXD1","qty":1,"online":true},{"category":"Microphone","model":"Handheld \u2013 Shure ULXD2","qty":1,"online":true},{"category":"Microphone","model":"Receiver \u2013 Shure ULXD4","qty":1,"online":false},{"category":"Document Camera","model":"Wolfvision VZ-3neo","qty":1,"online":true},{"category":"Blu-Ray / DVD Player","model":"Denon DN-500BD Blu-ray","qty":1,"online":true},{"category":"Amplifier","model":"Lab Gruppen C 5_4X (4) / Extron XPA 2001","qty":2,"online":true},{"category":"Speaker","model":"JBL Sub (6)  / JBL Mid-high","qty":10,"online":true},{"category":"Power Conditioner","model":"Furman CN-2400S","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 330 Tx / Rx","qty":1,"online":false},{"category":"Video Conferencing","model":"Logitech","qty":1,"online":true}],"_room_online":false,"_photo_count":8,"_contacts":{"CTL Support":{"name":"Elliot Ward","email":"elliot.ward@campus.edu","phone":"(706) 555-3029"},"AV Support":{"name":"Casey Coleman","email":"casey.coleman@campus.edu","phone":"(706) 555-2528"},"Department Contact":{"name":"Casey Nguyen","email":"casey.nguyen@campus.edu","phone":"(706) 555-1049"},"Computer Support":{"name":"Jordan Patel","email":"jordan.patel@campus.edu","phone":"(706) 555-5512"}}},{"Building":"Veterinary Medicine Diagnostic Labs","Room":"202","Room Type":"","Department":"Athens Diagnostic Lab","College":"College of Veterinary Medicine","Primary Support Unit":"College of Veterinary Medicine","Zone":"SLC","_ctl_supported":false,"Seating Capacity":10.0,"Room Square Footage":183.0,"Seating Configuration":"","Floor Type":"Level","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[],"_room_online":true,"_photo_count":5,"_contacts":{"CTL Support":null,"AV Support":{"name":"Taylor Foster","email":"taylor.foster@campus.edu","phone":"(706) 555-7365"},"Department Contact":{"name":"Quinn Ellis","email":"quinn.ellis@campus.edu","phone":"(706) 555-8757"},"Computer Support":{"name":"Sam Ellis","email":"sam.ellis@campus.edu","phone":"(706) 555-9831"}}},{"Building":"Hillside Dining, Learning, and Wellness Center - DLW","Room":"124","Room Type":"Classroom","Department":"Dining Services","College":"Auxiliary Services","Primary Support Unit":"Center for Teaching and Learning","Zone":"MLC","_ctl_supported":true,"Seating Capacity":48.0,"Room Square Footage":"","Seating Configuration":"Movable Tables - Movable Chairs","Floor Type":"Level","Notes":"","Latest Update":"2026 - New Building","Last Update Year":2026,"_equipment":[{"category":"Equipment Cabinet","model":"Computer Comforts Power Lift","qty":1,"online":true},{"category":"Projector","model":"Epson EB-PU1008W","qty":1,"online":true},{"category":"Projector","model":"Epson EB-PU1008W","qty":1,"online":true},{"category":"Wall Display","model":"Panasonic TH-75CQE2","qty":1,"online":false},{"category":"Wall Display","model":"Panasonic TH-65CQE2","qty":4,"online":true},{"category":"Touchpanel","model":"Extron TLP Pro 1025T","qty":1,"online":true},{"category":"Controller","model":"Extron IPCP Pro 355MQ xi","qty":1,"online":true},{"category":"Switcher","model":"Extron DTP CrossPoint 82 4K IPCP Q MA 70","qty":1,"online":true},{"category":"Microphone","model":"Lavalier \u2013 Shure QLXD1","qty":1,"online":true},{"category":"Microphone","model":"Receiver \u2013 Shure QLXD4","qty":1,"online":true},{"category":"Document Camera","model":"Wolfvision VZ-3neo UHD","qty":1,"online":true},{"category":"Amplifier","model":"Extron DTP CrossPoint 82 4K IPCP Q MA 70","qty":1,"online":true},{"category":"Speaker","model":"Tannoy CVS4 Micro","qty":1,"online":true},{"category":"Power Conditioner","model":"Furman CN-1800S","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 230 Tx / Rx","qty":1,"online":true},{"category":"Video Conferencing","model":"Vaddio","qty":1,"online":true}],"_room_online":false,"_photo_count":8,"_contacts":{"CTL Support":{"name":"Drew Brooks","email":"drew.brooks@campus.edu","phone":"(706) 555-1548"},"AV Support":{"name":"Parker Bennett","email":"parker.bennett@campus.edu","phone":"(706) 555-5615"},"Department Contact":{"name":"Quinn Hayes","email":"quinn.hayes@campus.edu","phone":"(706) 555-7915"},"Computer Support":{"name":"Reese Patel","email":"reese.patel@campus.edu","phone":"(706) 555-5269"}}},{"Building":"Staff Training & Development Center","Room":"211","Room Type":"","Department":"","College":"","Primary Support Unit":"","Zone":"\u2014","_ctl_supported":false,"Seating Capacity":18.0,"Room Square Footage":563.0,"Seating Configuration":"","Floor Type":"Yes","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[],"_room_online":true,"_photo_count":6,"_contacts":{"CTL Support":null,"AV Support":{"name":"Drew Brooks","email":"drew.brooks@campus.edu","phone":"(706) 555-7354"},"Department Contact":{"name":"Jordan Patel","email":"jordan.patel@campus.edu","phone":"(706) 555-6203"},"Computer Support":{"name":"Sam Coleman","email":"sam.coleman@campus.edu","phone":"(706) 555-2729"}}},{"Building":"Memorial Hall","Room":"211","Room Type":"Other","Department":"Dean of Students","College":"Dean of Students","Primary Support Unit":"Dean of Students","Zone":"Central","_ctl_supported":false,"Seating Capacity":200.0,"Room Square Footage":4691.0,"Seating Configuration":"","Floor Type":"Level","Notes":"Ballroom","Latest Update":"","Last Update Year":null,"_equipment":[{"category":"Equipment Cabinet","model":"Rack - Wall Mounted","qty":1,"online":true},{"category":"Projector","model":"NEC NP2200","qty":1,"online":true},{"category":"Amplifier","model":"EV AP2600A SA","qty":1,"online":true},{"category":"Speaker","model":"QSC KLA","qty":1,"online":true}],"_room_online":true,"_photo_count":7,"_contacts":{"CTL Support":null,"AV Support":{"name":"Morgan Kim","email":"morgan.kim@campus.edu","phone":"(706) 555-6793"},"Department Contact":{"name":"Avery Patel","email":"avery.patel@campus.edu","phone":"(706) 555-6485"},"Computer Support":{"name":"Elliot Nguyen","email":"elliot.nguyen@campus.edu","phone":"(706) 555-9379"}}},{"Building":"Food Science Building","Room":"219","Room Type":"","Department":"Food Science and Technology","College":"College of Agricultural and Environmental Sciences","Primary Support Unit":"Food Science and Technology","Zone":"South","_ctl_supported":false,"Seating Capacity":30.0,"Room Square Footage":1007.0,"Seating Configuration":"Fixed Tables - Stools","Floor Type":"Level","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":false},{"category":"Equipment Cabinet","model":"Table","qty":1,"online":true},{"category":"Projector","model":"Sharp XG-P25X","qty":1,"online":true}],"_room_online":false,"_photo_count":3,"_contacts":{"CTL Support":null,"AV Support":{"name":"Taylor Brooks","email":"taylor.brooks@campus.edu","phone":"(706) 555-2510"},"Department Contact":{"name":"Riley Ellis","email":"riley.ellis@campus.edu","phone":"(706) 555-2280"},"Computer Support":{"name":"Drew Bennett","email":"drew.bennett@campus.edu","phone":"(706) 555-4254"}}},{"Building":"Jackson Street Building","Room":"26SE","Room Type":"Classroom","Department":"Environmental Planning and Design","College":"College of Environment and Design","Primary Support Unit":"College of Environment and Design","Zone":"North","_ctl_supported":false,"Seating Capacity":40.0,"Room Square Footage":3312.0,"Seating Configuration":"Movable Tables and Stools","Floor Type":"Level","Notes":"","Latest Update":"2023 - Complete Upgrade","Last Update Year":2023,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Space Saver - Computer Comforts","qty":1,"online":true},{"category":"Wall Display","model":"LG 86\" UR640S","qty":2,"online":true},{"category":"Touchpanel","model":"Extron TLP Pro 725T","qty":1,"online":false},{"category":"Controller","model":"Extron IN1808","qty":1,"online":true},{"category":"Switcher","model":"Extron IN1808","qty":1,"online":false},{"category":"Document Camera","model":"AVerVision F50-8M","qty":1,"online":true},{"category":"Amplifier","model":"Extron IN1808","qty":1,"online":true},{"category":"Power Conditioner","model":"Furman CN-2400S","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 230 Tx / Rx","qty":1,"online":true}],"_room_online":false,"_photo_count":4,"_contacts":{"CTL Support":null,"AV Support":{"name":"Avery Reed","email":"avery.reed@campus.edu","phone":"(706) 555-2460"},"Department Contact":{"name":"Morgan Brooks","email":"morgan.brooks@campus.edu","phone":"(706) 555-1650"},"Computer Support":{"name":"Jordan Ellis","email":"jordan.ellis@campus.edu","phone":"(706) 555-4438"}}},{"Building":"Science Learning Center","Room":"145","Room Type":"Classroom","Department":"Organic Chemistry","College":"Office of the Vice President for Instruction","Primary Support Unit":"Center for Teaching and Learning","Zone":"SLC","_ctl_supported":true,"Seating Capacity":72.0,"Room Square Footage":1435.0,"Seating Configuration":"8 SCALE-UP Tables - 72 Movable Chairs","Floor Type":"Level","Notes":"SCALE-UP Classroom - Tesira Forte Vi Digital Signal Prcocessor","Latest Update":"2025 - Complete Upgrade","Last Update Year":2025,"_equipment":[{"category":"Instructor Computer","model":"Mac","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Space Saver - Computer Comforts","qty":1,"online":true},{"category":"Projector","model":"Epson PowerLite L630U","qty":1,"online":true},{"category":"Projector","model":"Epson PowerLite L630U","qty":1,"online":true},{"category":"Wall Display","model":"Panasonic TH-65CQE2U","qty":8,"online":true},{"category":"Touchpanel","model":"Extron TLP Pro 1025T","qty":1,"online":true},{"category":"Controller","model":"Extron IPCP Pro 360Q xi","qty":1,"online":true},{"category":"Switcher","model":"Extron DTP Crosspoint 82 4k","qty":1,"online":true},{"category":"Microphone","model":"Lavalier \u2013 Shure ULXD1","qty":1,"online":true},{"category":"Microphone","model":"Handheld \u2013 Shure ULXD2","qty":1,"online":true},{"category":"Microphone","model":"Receiver \u2013 Shure ULXD4G50","qty":1,"online":false},{"category":"Document Camera","model":"Wolfvision EYE-12 (ceiling)","qty":1,"online":false},{"category":"Blu-Ray / DVD Player","model":"LG Blu-Ray","qty":1,"online":true},{"category":"Amplifier","model":"Lab Gruppen C 5_4X","qty":2,"online":true},{"category":"Speaker","model":"Tannoy CVS6","qty":8,"online":true},{"category":"Power Conditioner","model":"Furman CN-2400S","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 230 Tx / Rx","qty":1,"online":true}],"_room_online":false,"_photo_count":5,"_contacts":{"CTL Support":{"name":"Avery Brooks","email":"avery.brooks@campus.edu","phone":"(706) 555-8370"},"AV Support":{"name":"Riley Foster","email":"riley.foster@campus.edu","phone":"(706) 555-2344"},"Department Contact":{"name":"Reese Foster","email":"reese.foster@campus.edu","phone":"(706) 555-3101"},"Computer Support":{"name":"Riley Bennett","email":"riley.bennett@campus.edu","phone":"(706) 555-3842"}}},{"Building":"Driftmier Engineering Center","Room":"1214","Room Type":"","Department":"College of Engineering","College":"College of Engineering","Primary Support Unit":"College of Engineering","Zone":"SLC","_ctl_supported":false,"Seating Capacity":20.0,"Room Square Footage":1108.0,"Seating Configuration":"","Floor Type":"Level","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[],"_room_online":true,"_photo_count":6,"_contacts":{"CTL Support":null,"AV Support":{"name":"Reese Coleman","email":"reese.coleman@campus.edu","phone":"(706) 555-3249"},"Department Contact":{"name":"Quinn Ward","email":"quinn.ward@campus.edu","phone":"(706) 555-8599"},"Computer Support":{"name":"Quinn Nguyen","email":"quinn.nguyen@campus.edu","phone":"(706) 555-4848"}}},{"Building":"Russell Hall","Room":"228","Room Type":"","Department":"Medical Partnership","College":"Medical Partnership","Primary Support Unit":"Medical Partnership","Zone":"MLC","_ctl_supported":false,"Seating Capacity":50.0,"Room Square Footage":1726.0,"Seating Configuration":"Movable Tables - Movable Seats","Floor Type":"Level","Notes":"","Latest Update":"2022 - Upgraded - Reported by Medical Partnership","Last Update Year":2022,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":false},{"category":"Equipment Cabinet","model":"Open Front -Rear Access Door","qty":1,"online":false},{"category":"Projector","model":"Epson G5650W","qty":1,"online":true},{"category":"Wall Display","model":"Panasonic 50\" (TH-50PH30)","qty":1,"online":true},{"category":"Touchpanel","model":"AMX","qty":1,"online":true},{"category":"Switcher","model":"AMX DVX-3150-HD-SP","qty":1,"online":true},{"category":"Microphone","model":"Lavalier \u2013 Shure SLX1","qty":1,"online":true},{"category":"Microphone","model":"Handheld \u2013 Shure SM58","qty":1,"online":true},{"category":"Microphone","model":"Receiver \u2013 Shure ULXS4","qty":1,"online":true},{"category":"Amplifier","model":"Bi-Amp Nexia TC / Extron XPA 2003C","qty":1,"online":true},{"category":"Speaker","model":"Bose Wall (2) / Bose Ceiling","qty":4,"online":true},{"category":"Power Conditioner","model":"Tripp Lite Power Conditioner","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 301 Tx / Rx","qty":5,"online":true},{"category":"Video Conferencing","model":"Cisco","qty":1,"online":true}],"_room_online":false,"_photo_count":5,"_contacts":{"CTL Support":null,"AV Support":{"name":"Morgan Patel","email":"morgan.patel@campus.edu","phone":"(706) 555-1441"},"Department Contact":{"name":"Sam Bennett","email":"sam.bennett@campus.edu","phone":"(706) 555-2918"},"Computer Support":{"name":"Taylor Santos","email":"taylor.santos@campus.edu","phone":"(706) 555-7280"}}},{"Building":"Cedar Street Building B","Room":"404A","Room Type":"Classroom","Department":"Biological Sciences","College":"Franklin College of Arts and Sciences","Primary Support Unit":"Center for Teaching and Learning","Zone":"South","_ctl_supported":true,"Seating Capacity":82.0,"Room Square Footage":1139.0,"Seating Configuration":"Tablet Arm Chairs - Fixed","Floor Type":"Tiered","Notes":"","Latest Update":"2023 - Complete Upgrade","Last Update Year":2023,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Malone Arches AAA","qty":1,"online":true},{"category":"Projector","model":"Panasonic PT-RZ120LW","qty":1,"online":false},{"category":"Touchpanel","model":"Extron TLP Pro 1025T","qty":1,"online":true},{"category":"Controller","model":"Extron IPCP Pro 460Q xi","qty":1,"online":true},{"category":"Switcher","model":"Extron DTP Crosspoint 82 4K","qty":1,"online":true},{"category":"Microphone","model":"Lavalier \u2013 Shure ULXD1","qty":1,"online":true},{"category":"Microphone","model":"Handheld \u2013 Shure ULXD2","qty":1,"online":true},{"category":"Microphone","model":"Receiver \u2013 Shure ULXD4","qty":1,"online":true},{"category":"Document Camera","model":"Wolfvision VZ-3neo","qty":1,"online":false},{"category":"Blu-Ray / DVD Player","model":"LG Blu-Ray","qty":1,"online":true},{"category":"Amplifier","model":"QSC ISA 300Ti","qty":1,"online":true},{"category":"Speaker","model":"Tannoy CVS4","qty":1,"online":true},{"category":"Power Conditioner","model":"Furman CN-2400S","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 330 Tx / Rx","qty":1,"online":true},{"category":"Video Conferencing","model":"Logitech","qty":1,"online":true}],"_room_online":false,"_photo_count":5,"_contacts":{"CTL Support":{"name":"Riley Kim","email":"riley.kim@campus.edu","phone":"(706) 555-7302"},"AV Support":{"name":"Riley Santos","email":"riley.santos@campus.edu","phone":"(706) 555-8126"},"Department Contact":{"name":"Taylor Ellis","email":"taylor.ellis@campus.edu","phone":"(706) 555-7202"},"Computer Support":{"name":"Quinn Brooks","email":"quinn.brooks@campus.edu","phone":"(706) 555-7544"}}},{"Building":"Aderhold Hall","Room":"114","Room Type":"","Department":"College of Education","College":"College of Education","Primary Support Unit":"College of Education","Zone":"SLC","_ctl_supported":false,"Seating Capacity":36.0,"Room Square Footage":501.0,"Seating Configuration":"Movable Tables - Movable Seats","Floor Type":"Level","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Malone","qty":1,"online":true},{"category":"Projector","model":"Epson G6050W","qty":1,"online":true},{"category":"Touchpanel","model":"Crestron 2NFTTPS4B","qty":1,"online":true},{"category":"Controller","model":"Crestron DMPS-100-C","qty":1,"online":true},{"category":"Switcher","model":"Crestron DMPS-100-C","qty":1,"online":true},{"category":"Amplifier","model":"Crestron DMPS-100-C","qty":1,"online":true},{"category":"Speaker","model":"Extron Wall","qty":1,"online":true}],"_room_online":true,"_photo_count":4,"_contacts":{"CTL Support":null,"AV Support":{"name":"Avery Coleman","email":"avery.coleman@campus.edu","phone":"(706) 555-4875"},"Department Contact":{"name":"Casey Coleman","email":"casey.coleman@campus.edu","phone":"(706) 555-9558"},"Computer Support":{"name":"Avery Coleman","email":"avery.coleman@campus.edu","phone":"(706) 555-9202"}}},{"Building":"Russell Hall (Main)","Room":"126","Room Type":"Classroom","Department":"Division of Academic Enhancement","College":"Office of the Vice President for Student Affairs","Primary Support Unit":"Center for Teaching and Learning","Zone":"Central","_ctl_supported":false,"Seating Capacity":24.0,"Room Square Footage":636.0,"Seating Configuration":"Tables Movable - Chairs Movable","Floor Type":"Level","Notes":"","Latest Update":"2018 - Complete Upgrade","Last Update Year":2018,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Space Saver - Computer Comforts","qty":1,"online":true},{"category":"Projector","model":"Epson G5650W","qty":1,"online":true},{"category":"Touchpanel","model":"AMX MST-701","qty":1,"online":true},{"category":"Controller","model":"AMX NX-3200","qty":1,"online":true},{"category":"Switcher","model":"Extron IN1606","qty":1,"online":true},{"category":"Document Camera","model":"Wolfvision VZ-8light4","qty":1,"online":true},{"category":"Blu-Ray / DVD Player","model":"LG Blu-Ray","qty":1,"online":true},{"category":"Amplifier","model":"Extron MPA 401","qty":1,"online":true},{"category":"Speaker","model":"Tannoy CVS4","qty":4,"online":true},{"category":"Power Conditioner","model":"FSR SPC-20","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 301 Tx / Rx","qty":1,"online":true}],"_room_online":true,"_photo_count":7,"_contacts":{"CTL Support":null,"AV Support":{"name":"Reese Patel","email":"reese.patel@campus.edu","phone":"(706) 555-5638"},"Department Contact":{"name":"Drew Brooks","email":"drew.brooks@campus.edu","phone":"(706) 555-4865"},"Computer Support":{"name":"Avery Hayes","email":"avery.hayes@campus.edu","phone":"(706) 555-1229"}}},{"Building":"Social Work","Room":"241","Room Type":"Classroom","Department":"School of Social Work","College":"School of Social Work","Primary Support Unit":"School of Social Work","Zone":"Central","_ctl_supported":false,"Seating Capacity":39.0,"Room Square Footage":658.0,"Seating Configuration":"Movable Tables - Movable Chairs","Floor Type":"Level","Notes":"","Latest Update":"2023 - Complete Upgrade","Last Update Year":2023,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Space Saver - Computer Comforts","qty":1,"online":true},{"category":"Projector","model":"Epson PowerLite L615U","qty":1,"online":true},{"category":"Wall Display","model":"Viewsonic 70\" Interactive Display","qty":1,"online":true},{"category":"Touchpanel","model":"Extron TLP Pro 725M","qty":1,"online":true},{"category":"Controller","model":"Extron IN1808","qty":1,"online":true},{"category":"Switcher","model":"Extron IN1808","qty":1,"online":true},{"category":"Microphone","model":"Lavalier \u2013 Shure ULX1","qty":1,"online":true},{"category":"Microphone","model":"Handheld \u2013 Shure ULX2","qty":1,"online":true},{"category":"Microphone","model":"Receiver \u2013 Shure ULXS4","qty":1,"online":true},{"category":"Amplifier","model":"Extron IN1808","qty":1,"online":true},{"category":"Speaker","model":"Extron SF 3PT","qty":3,"online":true},{"category":"Power Conditioner","model":"Furman CN-2400S","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 230 Tx / Rx","qty":1,"online":true},{"category":"Video Conferencing","model":"Zoom Kit","qty":1,"online":true}],"_room_online":true,"_photo_count":3,"_contacts":{"CTL Support":null,"AV Support":{"name":"Taylor Reed","email":"taylor.reed@campus.edu","phone":"(706) 555-8069"},"Department Contact":{"name":"Sam Foster","email":"sam.foster@campus.edu","phone":"(706) 555-9964"},"Computer Support":{"name":"Parker Hayes","email":"parker.hayes@campus.edu","phone":"(706) 555-6380"}}},{"Building":"Cedar Street Building B","Room":"319","Room Type":"","Department":"Odum School of Ecology","College":"Odum School of Ecology","Primary Support Unit":"Odum School of Ecology","Zone":"South","_ctl_supported":false,"Seating Capacity":24.0,"Room Square Footage":1020.0,"Seating Configuration":"Lab Benches - Lab Stools","Floor Type":"Level","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[],"_room_online":true,"_photo_count":9,"_contacts":{"CTL Support":null,"AV Support":{"name":"Elliot Hayes","email":"elliot.hayes@campus.edu","phone":"(706) 555-6747"},"Department Contact":{"name":"Jordan Hayes","email":"jordan.hayes@campus.edu","phone":"(706) 555-2878"},"Computer Support":{"name":"Morgan Ward","email":"morgan.ward@campus.edu","phone":"(706) 555-4374"}}},{"Building":"Marine Science","Room":"304","Room Type":"","Department":"Dance","College":"Franklin College of Arts and Sciences","Primary Support Unit":"Franklin College of Arts and Sciences","Zone":"South","_ctl_supported":false,"Seating Capacity":48.0,"Room Square Footage":865.0,"Seating Configuration":"Desk/Chair Units - Movable","Floor Type":"Level","Notes":"","Latest Update":"2019 - Complete Upgrade","Last Update Year":2019,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":false},{"category":"Equipment Cabinet","model":"Space Saver - Computer Comforts","qty":1,"online":true},{"category":"Projector","model":"Epson PowerLite 5520W","qty":1,"online":false},{"category":"Touchpanel","model":"AMX MST-701","qty":1,"online":true},{"category":"Controller","model":"AMX NX-3200","qty":1,"online":true},{"category":"Switcher","model":"Extron IN1606","qty":1,"online":true},{"category":"Document Camera","model":"Wolfvision VZ-3neo","qty":1,"online":true},{"category":"Blu-Ray / DVD Player","model":"LG Blu-Ray","qty":1,"online":true},{"category":"Amplifier","model":"Extron MPA 601","qty":1,"online":true},{"category":"Speaker","model":"Tannoy CVS4 Micro","qty":6,"online":true},{"category":"Power Conditioner","model":"FSR SPC-20","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 230 Tx / Rx","qty":1,"online":false}],"_room_online":false,"_photo_count":3,"_contacts":{"CTL Support":null,"AV Support":{"name":"Reese Ward","email":"reese.ward@campus.edu","phone":"(706) 555-8684"},"Department Contact":{"name":"Parker Santos","email":"parker.santos@campus.edu","phone":"(706) 555-2467"},"Computer Support":{"name":"Riley Brooks","email":"riley.brooks@campus.edu","phone":"(706) 555-5972"}}},{"Building":"Cedar Street Building A","Room":"127","Room Type":"Classroom","Department":"","College":"","Primary Support Unit":"Center for Teaching and Learning","Zone":"SLC","_ctl_supported":true,"Seating Capacity":24.0,"Room Square Footage":"","Seating Configuration":"Movable Tables - Movable Chairs","Floor Type":"Level","Notes":"Extron DTP HD DA4 Distribution Amplifier","Latest Update":"2026 - Full Upgrade","Last Update Year":2026,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":false},{"category":"Equipment Cabinet","model":"Computer Comforts Power Lift","qty":1,"online":true},{"category":"Wall Display","model":"Samsung QB85C","qty":1,"online":true},{"category":"Wall Display","model":"Samsung QB65C","qty":4,"online":true},{"category":"Touchpanel","model":"Extron TLP Pro 1025T","qty":1,"online":true},{"category":"Controller","model":"Extron IPCP Pro 355MQ xi","qty":1,"online":true},{"category":"Switcher","model":"Extron DTP CrossPoint 82 4K IPCP Q MA 70","qty":1,"online":true},{"category":"Document Camera","model":"Wolfvision VZ-3neo UHD","qty":1,"online":true},{"category":"Blu-Ray / DVD Player","model":"Sony Blu-Ray","qty":1,"online":true},{"category":"Amplifier","model":"Extron DTP CrossPoint 82 4K IPCP Q MA 70","qty":1,"online":true},{"category":"Speaker","model":"Tannoy CVS4 Micro","qty":4,"online":true},{"category":"Power Conditioner","model":"Furman CN-2400S","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 230 Tx / Rx","qty":1,"online":true},{"category":"Video Conferencing","model":"Logitech","qty":1,"online":true}],"_room_online":false,"_photo_count":5,"_contacts":{"CTL Support":{"name":"Morgan Ellis","email":"morgan.ellis@campus.edu","phone":"(706) 555-2038"},"AV Support":{"name":"Avery Ward","email":"avery.ward@campus.edu","phone":"(706) 555-6239"},"Department Contact":{"name":"Morgan Coleman","email":"morgan.coleman@campus.edu","phone":"(706) 555-9091"},"Computer Support":{"name":"Elliot Coleman","email":"elliot.coleman@campus.edu","phone":"(706) 555-7744"}}},{"Building":"Psychology Building","Room":"120","Room Type":"Classroom","Department":"Psychology","College":"Franklin College of Arts and Sciences","Primary Support Unit":"Franklin College of Arts and Sciences","Zone":"Central","_ctl_supported":false,"Seating Capacity":42.0,"Room Square Footage":747.0,"Seating Configuration":"Tables Movable - Chairs Movable","Floor Type":"Level","Notes":"","Latest Update":"2017 - Complete Upgrade","Last Update Year":2017,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Computer Comforts Universal","qty":1,"online":true},{"category":"Projector","model":"Epson G6070W","qty":1,"online":true},{"category":"Touchpanel","model":"AMX MST-701","qty":1,"online":true},{"category":"Controller","model":"AMX DVX-2255-HD-T","qty":1,"online":true},{"category":"Switcher","model":"AMX DVX-2255-HD-T","qty":1,"online":true},{"category":"Document Camera","model":"Wolfvision VZ-8light","qty":1,"online":true},{"category":"Blu-Ray / DVD Player","model":"LG Blu-Ray","qty":1,"online":true},{"category":"Amplifier","model":"AMX DVX-2255-HD-T","qty":1,"online":true},{"category":"Speaker","model":"Tannoy CVS4","qty":4,"online":true},{"category":"Power Conditioner","model":"FSR SPC-20","qty":1,"online":true},{"category":"Video Conferencing","model":"Logitech","qty":1,"online":true}],"_room_online":true,"_photo_count":7,"_contacts":{"CTL Support":null,"AV Support":{"name":"Parker Hayes","email":"parker.hayes@campus.edu","phone":"(706) 555-6143"},"Department Contact":{"name":"Quinn Kim","email":"quinn.kim@campus.edu","phone":"(706) 555-6682"},"Computer Support":{"name":"Morgan Hayes","email":"morgan.hayes@campus.edu","phone":"(706) 555-3845"}}},{"Building":"Ivester Hall","Room":"E107","Room Type":"Classroom","Department":"Terry College of Business","College":"Terry College of Business","Primary Support Unit":"Terry College of Business","Zone":"MLC","_ctl_supported":false,"Seating Capacity":48.0,"Room Square Footage":1392.0,"Seating Configuration":"Fixed Computer Tables - Movable Chairs","Floor Type":"Level","Notes":"Computer Lab","Latest Update":"2019 - New Install","Last Update Year":2019,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Spectrum - Freedom XRS eLite","qty":1,"online":true},{"category":"Projector","model":"Epson PowerLite L1100U","qty":1,"online":true},{"category":"Projector","model":"Epson PowerLite L1100U","qty":1,"online":false},{"category":"Wall Display","model":"Samsung 55\" (DM55E)","qty":1,"online":false},{"category":"Touchpanel","model":"AMX MST-701","qty":1,"online":true},{"category":"Switcher","model":"AMX DVX-3255-HD-T","qty":1,"online":true},{"category":"Microphone","model":"Receiver \u2013 Shure BLX4R","qty":1,"online":true},{"category":"Document Camera","model":"HoverCam Ultra 8","qty":1,"online":true},{"category":"Amplifier","model":"Extron XPA 2001 / Tesira Server IO Biamp","qty":1,"online":true},{"category":"Power Conditioner","model":"Furman P-8 Pro C","qty":2,"online":true},{"category":"HDMI Extender","model":"Extron 330 Tx / Rx","qty":4,"online":true},{"category":"Video Conferencing","model":"Vaddio","qty":1,"online":false}],"_room_online":false,"_photo_count":9,"_contacts":{"CTL Support":null,"AV Support":{"name":"Drew Ellis","email":"drew.ellis@campus.edu","phone":"(706) 555-8064"},"Department Contact":{"name":"Avery Reed","email":"avery.reed@campus.edu","phone":"(706) 555-9955"},"Computer Support":{"name":"Sam Reed","email":"sam.reed@campus.edu","phone":"(706) 555-8368"}}},{"Building":"Aderhold Hall","Room":"227","Room Type":"Computer Lab","Department":"Math & Science Education","College":"College of Education","Primary Support Unit":"College of Education","Zone":"SLC","_ctl_supported":false,"Seating Capacity":18.0,"Room Square Footage":561.0,"Seating Configuration":"Movable Tables - Movable Seats","Floor Type":"Level","Notes":"Mac Computer Lab","Latest Update":"","Last Update Year":null,"_equipment":[{"category":"Projector","model":"Epson G5650W","qty":1,"online":true},{"category":"Touchpanel","model":"Crestron 2NFTTPS4B","qty":1,"online":true},{"category":"Controller","model":"Crestron DMPS-100-C","qty":1,"online":true},{"category":"Switcher","model":"Crestron DMPS-100-C","qty":1,"online":true},{"category":"Amplifier","model":"Crestron DMPS-100-C","qty":1,"online":true},{"category":"Speaker","model":"Extron Wall","qty":1,"online":true}],"_room_online":true,"_photo_count":8,"_contacts":{"CTL Support":null,"AV Support":{"name":"Sam Nguyen","email":"sam.nguyen@campus.edu","phone":"(706) 555-4448"},"Department Contact":{"name":"Reese Santos","email":"reese.santos@campus.edu","phone":"(706) 555-3412"},"Computer Support":{"name":"Taylor Ellis","email":"taylor.ellis@campus.edu","phone":"(706) 555-3278"}}},{"Building":"Dawson Hall","Room":"306","Room Type":"","Department":"College of Family and Consumer Sciences","College":"College of Family and Consumer Sciences","Primary Support Unit":"College of Family and Consumer Sciences","Zone":"South","_ctl_supported":false,"Seating Capacity":48.0,"Room Square Footage":1257.0,"Seating Configuration":"","Floor Type":"Level","Notes":"","Latest Update":"2018 - Complete Upgrade","Last Update Year":2018,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Computer Comforts Universal","qty":1,"online":true},{"category":"Projector","model":"Epson PowerLite 5520W","qty":1,"online":true},{"category":"Touchpanel","model":"AMX MST-701","qty":1,"online":true},{"category":"Controller","model":"AMX NX-3200","qty":1,"online":true},{"category":"Switcher","model":"Extron IN1606","qty":1,"online":true},{"category":"Microphone","model":"Receiver \u2013 Shure ULXS4","qty":1,"online":true},{"category":"Document Camera","model":"HoverCam Ultra 8","qty":1,"online":true},{"category":"Blu-Ray / DVD Player","model":"LG Blu-Ray","qty":1,"online":true},{"category":"Amplifier","model":"Extron XPA 2001","qty":1,"online":true},{"category":"Speaker","model":"Tannoy CVS4 Micro","qty":6,"online":false},{"category":"Power Conditioner","model":"FSR SPC-20","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 230 Tx / Rx","qty":1,"online":true}],"_room_online":false,"_photo_count":5,"_contacts":{"CTL Support":null,"AV Support":{"name":"Reese Ward","email":"reese.ward@campus.edu","phone":"(706) 555-1032"},"Department Contact":{"name":"Casey Foster","email":"casey.foster@campus.edu","phone":"(706) 555-6750"},"Computer Support":{"name":"Morgan Santos","email":"morgan.santos@campus.edu","phone":"(706) 555-5486"}}},{"Building":"Science Learning Center","Room":"121","Room Type":"Laboratory","Department":"Organic Chemistry","College":"Office of the Vice President for Instruction","Primary Support Unit":"Center for Teaching and Learning","Zone":"SLC","_ctl_supported":true,"Seating Capacity":24.0,"Room Square Footage":1223.0,"Seating Configuration":"Lab Benches - Lab Stools","Floor Type":"Level","Notes":"","Latest Update":"2026 - Complete Upgrade","Last Update Year":2026,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Custom - In wall","qty":1,"online":true},{"category":"Projector","model":"Epson PowerLite L630U","qty":1,"online":true},{"category":"Touchpanel","model":"Extron TLP Pro 725T","qty":1,"online":true},{"category":"Controller","model":"Extron IN1808","qty":1,"online":true},{"category":"Switcher","model":"Extron IN1808","qty":1,"online":true},{"category":"Document Camera","model":"Wolfvision VZ-3","qty":1,"online":true},{"category":"Amplifier","model":"Extron IN1808","qty":1,"online":true},{"category":"Speaker","model":"Community D4LP Ceiling","qty":4,"online":true},{"category":"Power Conditioner","model":"Furman CN-2400S","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 330 Tx / Rx","qty":1,"online":true}],"_room_online":true,"_photo_count":6,"_contacts":{"CTL Support":{"name":"Reese Patel","email":"reese.patel@campus.edu","phone":"(706) 555-6567"},"AV Support":{"name":"Riley Nguyen","email":"riley.nguyen@campus.edu","phone":"(706) 555-7199"},"Department Contact":{"name":"Sam Foster","email":"sam.foster@campus.edu","phone":"(706) 555-9274"},"Computer Support":{"name":"Casey Ward","email":"casey.ward@campus.edu","phone":"(706) 555-6484"}}},{"Building":"Chapel","Room":"101","Room Type":"Other","Department":"Office of the Vice President for Student Affairs","College":"Office of the Vice President for Student Affairs","Primary Support Unit":"Office of the Vice President for Student Affairs","Zone":"North","_ctl_supported":false,"Seating Capacity":433.0,"Room Square Footage":3845.0,"Seating Configuration":"Fixed Seating - Auditorium","Floor Type":"Tiered","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[{"category":"Equipment Cabinet","model":"Built-In","qty":1,"online":true},{"category":"Projector","model":"Epson G6050W","qty":1,"online":true},{"category":"Switcher","model":"Extron MLC 53 Wall Plate","qty":1,"online":true},{"category":"Microphone","model":"Lavalier \u2013 Shure PGXD1","qty":1,"online":true},{"category":"Microphone","model":"Receiver \u2013 Shure PGXD4","qty":1,"online":true},{"category":"Amplifier","model":"Crest Audio FA601","qty":1,"online":true},{"category":"Speaker","model":"EV Sx100+","qty":2,"online":true}],"_room_online":true,"_photo_count":7,"_contacts":{"CTL Support":null,"AV Support":{"name":"Quinn Patel","email":"quinn.patel@campus.edu","phone":"(706) 555-8282"},"Department Contact":{"name":"Avery Hayes","email":"avery.hayes@campus.edu","phone":"(706) 555-9074"},"Computer Support":{"name":"Parker Bennett","email":"parker.bennett@campus.edu","phone":"(706) 555-4226"}}},{"Building":"Park Hall","Room":"145","Room Type":"Classroom","Department":"English","College":"Franklin College of Arts and Sciences","Primary Support Unit":"Franklin College of Arts and Sciences","Zone":"North","_ctl_supported":false,"Seating Capacity":40.0,"Room Square Footage":813.0,"Seating Configuration":"Desk/Chair Units - Movable","Floor Type":"Level","Notes":"","Latest Update":"2024 - We Didn't Install","Last Update Year":2024,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Computer Comforts Universal","qty":1,"online":true},{"category":"Projector","model":"Epson G5650W","qty":1,"online":true},{"category":"Touchpanel","model":"AMX NXT-CV7","qty":1,"online":true},{"category":"Controller","model":"AMX NI-3100","qty":1,"online":true},{"category":"Switcher","model":"Extron MPS 409","qty":1,"online":true},{"category":"Amplifier","model":"Extron MPA 401","qty":1,"online":true},{"category":"Speaker","model":"Tannoy CVS4","qty":2,"online":true},{"category":"Power Conditioner","model":"FSR SPC-20","qty":1,"online":true},{"category":"Video Conferencing","model":"Logitech","qty":1,"online":true}],"_room_online":true,"_photo_count":9,"_contacts":{"CTL Support":null,"AV Support":{"name":"Reese Nguyen","email":"reese.nguyen@campus.edu","phone":"(706) 555-6556"},"Department Contact":{"name":"Avery Nguyen","email":"avery.nguyen@campus.edu","phone":"(706) 555-5954"},"Computer Support":{"name":"Casey Hayes","email":"casey.hayes@campus.edu","phone":"(706) 555-6045"}}},{"Building":"Driftmier Engineering Center","Room":"1367","Room Type":"","Department":"College of Engineering","College":"College of Engineering","Primary Support Unit":"College of Engineering","Zone":"SLC","_ctl_supported":false,"Seating Capacity":24.0,"Room Square Footage":982.0,"Seating Configuration":"","Floor Type":"Level","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[],"_room_online":true,"_photo_count":5,"_contacts":{"CTL Support":null,"AV Support":{"name":"Sam Foster","email":"sam.foster@campus.edu","phone":"(706) 555-4035"},"Department Contact":{"name":"Elliot Hayes","email":"elliot.hayes@campus.edu","phone":"(706) 555-1937"},"Computer Support":{"name":"Avery Ward","email":"avery.ward@campus.edu","phone":"(706) 555-4618"}}},{"Building":"Ramsey Student Center","Room":"224","Room Type":"","Department":"College of Education","College":"College of Education","Primary Support Unit":"College of Education","Zone":"South","_ctl_supported":false,"Seating Capacity":41.0,"Room Square Footage":551.0,"Seating Configuration":"Desk/chair units - Movable","Floor Type":"Level","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Malone","qty":1,"online":true},{"category":"Projector","model":"Epson G5650W","qty":1,"online":true},{"category":"Touchpanel","model":"Crestron QM-FTCC-TPS4","qty":1,"online":true},{"category":"Controller","model":"Crestron DMPS-100-C","qty":1,"online":true},{"category":"Switcher","model":"Crestron DMPS-100-C","qty":1,"online":true},{"category":"Amplifier","model":"Crestron DMPS-100-C","qty":1,"online":true},{"category":"Speaker","model":"Extron Wall","qty":1,"online":true}],"_room_online":true,"_photo_count":8,"_contacts":{"CTL Support":null,"AV Support":{"name":"Riley Ellis","email":"riley.ellis@campus.edu","phone":"(706) 555-4693"},"Department Contact":{"name":"Morgan Reed","email":"morgan.reed@campus.edu","phone":"(706) 555-7451"},"Computer Support":{"name":"Drew Nguyen","email":"drew.nguyen@campus.edu","phone":"(706) 555-7601"}}},{"Building":"Sanford Hall","Room":"207","Room Type":"Classroom","Department":"Center for Teaching and Learning","College":"Center for Teaching and Learning","Primary Support Unit":"Center for Teaching and Learning","Zone":"Central","_ctl_supported":true,"Seating Capacity":9.0,"Room Square Footage":291.0,"Seating Configuration":"Movable Tables - Movable Chairs","Floor Type":"Level","Notes":"","Latest Update":"2024 - Complete Upgrade","Last Update Year":2024,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Computer Comforts Hideaway","qty":1,"online":true},{"category":"Projector","model":"Epson PowerLite L630U","qty":1,"online":true},{"category":"Touchpanel","model":"Extron TLP Pro 725T","qty":1,"online":true},{"category":"Controller","model":"Extron TLCA 1 Adapter","qty":1,"online":true},{"category":"Switcher","model":"Extron IN1606","qty":1,"online":true},{"category":"Amplifier","model":"Extron MPA 401","qty":1,"online":true},{"category":"Speaker","model":"JBL Ceiling","qty":2,"online":true},{"category":"Power Conditioner","model":"Furman CN-2400S","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 230 Tx / Rx","qty":1,"online":true}],"_room_online":true,"_photo_count":5,"_contacts":{"CTL Support":{"name":"Casey Nguyen","email":"casey.nguyen@campus.edu","phone":"(706) 555-4375"},"AV Support":{"name":"Elliot Coleman","email":"elliot.coleman@campus.edu","phone":"(706) 555-8216"},"Department Contact":{"name":"Drew Nguyen","email":"drew.nguyen@campus.edu","phone":"(706) 555-1195"},"Computer Support":{"name":"Drew Reed","email":"drew.reed@campus.edu","phone":"(706) 555-8970"}}},{"Building":"Brooks Hall","Room":"350F","Room Type":"Conference Room","Department":"Statistics","College":"Franklin College of Arts and Sciences","Primary Support Unit":"Franklin College of Arts and Sciences","Zone":"North","_ctl_supported":false,"Seating Capacity":10.0,"Room Square Footage":146.0,"Seating Configuration":"","Floor Type":"Level","Notes":"","Latest Update":"2013 - Complete Upgrade","Last Update Year":2013,"_equipment":[],"_room_online":true,"_photo_count":5,"_contacts":{"CTL Support":null,"AV Support":{"name":"Parker Hayes","email":"parker.hayes@campus.edu","phone":"(706) 555-3278"},"Department Contact":{"name":"Riley Ward","email":"riley.ward@campus.edu","phone":"(706) 555-6796"},"Computer Support":{"name":"Parker Coleman","email":"parker.coleman@campus.edu","phone":"(706) 555-8338"}}},{"Building":"Zell Miller Learning Center","Room":"368","Room Type":"Computer Lab","Department":"UGA Libraries","College":"UGA Libraries","Primary Support Unit":"Center for Teaching and Learning","Zone":"MLC","_ctl_supported":true,"Seating Capacity":38.0,"Room Square Footage":1582.0,"Seating Configuration":"Fixed Tables - Movable Seats","Floor Type":"Tiered","Notes":"","Latest Update":"2025 - Complete Upgrade","Last Update Year":2025,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Computer Comforts Power Lift & Free Standing Rack","qty":1,"online":true},{"category":"Projector","model":"Epson EB-PU1008W","qty":1,"online":true},{"category":"Wall Display","model":"Panasonic TH-86EQ2W","qty":3,"online":true},{"category":"Touchpanel","model":"Extron TLP Pro 1025T","qty":1,"online":true},{"category":"Controller","model":"Extron IPCP Pro 360Q xi","qty":1,"online":true},{"category":"Switcher","model":"Extron DTP Crosspoint 84 4K","qty":1,"online":true},{"category":"Document Camera","model":"Wolfvision VZ-8neo UHD","qty":1,"online":true},{"category":"Blu-Ray / DVD Player","model":"Sony Blu-Ray","qty":1,"online":true},{"category":"Amplifier","model":"Extron XPA 2001","qty":1,"online":true},{"category":"Speaker","model":"Extron SF 228T","qty":6,"online":true},{"category":"Power Conditioner","model":"Furman CN-2400S","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 230 Tx / Rx","qty":1,"online":false}],"_room_online":false,"_photo_count":9,"_contacts":{"CTL Support":{"name":"Drew Bennett","email":"drew.bennett@campus.edu","phone":"(706) 555-3663"},"AV Support":{"name":"Casey Bennett","email":"casey.bennett@campus.edu","phone":"(706) 555-8858"},"Department Contact":{"name":"Parker Bennett","email":"parker.bennett@campus.edu","phone":"(706) 555-6408"},"Computer Support":{"name":"Morgan Kim","email":"morgan.kim@campus.edu","phone":"(706) 555-6400"}}},{"Building":"Aderhold Hall","Room":"412","Room Type":"","Department":"College of Education","College":"College of Education","Primary Support Unit":"College of Education","Zone":"SLC","_ctl_supported":false,"Seating Capacity":30.0,"Room Square Footage":672.0,"Seating Configuration":"Movable Tables - Movable Seats","Floor Type":"Level","Notes":"Active Learning Classroom","Latest Update":"","Last Update Year":null,"_equipment":[{"category":"Instructor Computer","model":"Mac","qty":1,"online":false},{"category":"Wall Display","model":"(2) Smart Board 65\" interactive displays (4065) - (3) Smart Board 55\" interactive displays (4055)Board 55\" interactive displays","qty":4055,"online":true}],"_room_online":false,"_photo_count":7,"_contacts":{"CTL Support":null,"AV Support":{"name":"Elliot Reed","email":"elliot.reed@campus.edu","phone":"(706) 555-1025"},"Department Contact":{"name":"Morgan Ellis","email":"morgan.ellis@campus.edu","phone":"(706) 555-3252"},"Computer Support":{"name":"Parker Ward","email":"parker.ward@campus.edu","phone":"(706) 555-7403"}}},{"Building":"Psychology Building","Room":"233","Room Type":"Conference Room","Department":"Psychology","College":"Franklin College of Arts and Sciences","Primary Support Unit":"Franklin College of Arts and Sciences","Zone":"Central","_ctl_supported":false,"Seating Capacity":11.0,"Room Square Footage":308.0,"Seating Configuration":"","Floor Type":"Level","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Cappy","qty":1,"online":true},{"category":"Wall Display","model":"Samsung 50\" display","qty":1,"online":true}],"_room_online":true,"_photo_count":3,"_contacts":{"CTL Support":null,"AV Support":{"name":"Riley Ward","email":"riley.ward@campus.edu","phone":"(706) 555-8623"},"Department Contact":{"name":"Morgan Brooks","email":"morgan.brooks@campus.edu","phone":"(706) 555-8247"},"Computer Support":{"name":"Drew Patel","email":"drew.patel@campus.edu","phone":"(706) 555-7036"}}},{"Building":"Aderhold Hall","Room":"317","Room Type":"","Department":"College of Education","College":"College of Education","Primary Support Unit":"College of Education","Zone":"SLC","_ctl_supported":false,"Seating Capacity":46.0,"Room Square Footage":889.0,"Seating Configuration":"Movable Tables - Movable Seats","Floor Type":"Level","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Malone","qty":1,"online":true},{"category":"Projector","model":"Epson G6050W","qty":1,"online":true},{"category":"Touchpanel","model":"Crestron QM-FTCC-TPS4","qty":1,"online":true},{"category":"Controller","model":"Crestron DMPS-100-C","qty":1,"online":true},{"category":"Switcher","model":"Crestron DMPS-100-C","qty":1,"online":true},{"category":"Document Camera","model":"AVerVision300AF+","qty":1,"online":true},{"category":"Amplifier","model":"Crestron DMPS-100-C","qty":1,"online":true},{"category":"Speaker","model":"Extron Wall","qty":1,"online":true}],"_room_online":true,"_photo_count":5,"_contacts":{"CTL Support":null,"AV Support":{"name":"Reese Kim","email":"reese.kim@campus.edu","phone":"(706) 555-7283"},"Department Contact":{"name":"Taylor Ward","email":"taylor.ward@campus.edu","phone":"(706) 555-3717"},"Computer Support":{"name":"Sam Ward","email":"sam.ward@campus.edu","phone":"(706) 555-6467"}}},{"Building":"Russell Hall","Room":"217","Room Type":"Classroom","Department":"College of Public Health","College":"College of Public Health","Primary Support Unit":"Center for Teaching and Learning","Zone":"MLC","_ctl_supported":true,"Seating Capacity":40.0,"Room Square Footage":989.0,"Seating Configuration":"Movable Tables - Movable Seats","Floor Type":"Level","Notes":"Classroom was reduced by one half in July 2021. Original equipment was retained with the exception of the removal of the amplifier","Latest Update":"2023 - Complete Upgrade","Last Update Year":2023,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":false},{"category":"Equipment Cabinet","model":"Space Saver - Computer Comforts","qty":1,"online":true},{"category":"Projector","model":"Epson PowerLite L630U","qty":1,"online":true},{"category":"Touchpanel","model":"Extron TLP Pro 725M","qty":1,"online":false},{"category":"Controller","model":"Extron IN1808","qty":1,"online":true},{"category":"Switcher","model":"Extron IN1808","qty":1,"online":true},{"category":"Microphone","model":"Lavalier \u2013 Shure ULXD1","qty":1,"online":true},{"category":"Microphone","model":"Receiver \u2013 Shure ULXD4","qty":1,"online":true},{"category":"Document Camera","model":"Wolfvision VZ-3neo","qty":1,"online":true},{"category":"Blu-Ray / DVD Player","model":"LG Blu-Ray","qty":1,"online":true},{"category":"Amplifier","model":"Extron IN1808","qty":1,"online":true},{"category":"Speaker","model":"Bose FreeSpace DS 16F Ceiling","qty":6,"online":true},{"category":"Power Conditioner","model":"Furman CN-2400S","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 230 Tx / Rx","qty":1,"online":true}],"_room_online":false,"_photo_count":3,"_contacts":{"CTL Support":{"name":"Sam Bennett","email":"sam.bennett@campus.edu","phone":"(706) 555-4091"},"AV Support":{"name":"Parker Patel","email":"parker.patel@campus.edu","phone":"(706) 555-6523"},"Department Contact":{"name":"Avery Bennett","email":"avery.bennett@campus.edu","phone":"(706) 555-7757"},"Computer Support":{"name":"Casey Nguyen","email":"casey.nguyen@campus.edu","phone":"(706) 555-6289"}}},{"Building":"Jackson Street Building","Room":"132-2","Room Type":"Studio","Department":"Environmental Planning and Design","College":"College of Environment and Design","Primary Support Unit":"College of Environment and Design","Zone":"North","_ctl_supported":false,"Seating Capacity":30.0,"Room Square Footage":4790.0,"Seating Configuration":"Movable Tables and Stools","Floor Type":"Level","Notes":"","Latest Update":"2024 - Complete Upgrade","Last Update Year":2024,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Space Saver - Computer Comforts","qty":1,"online":true},{"category":"Wall Display","model":"LG 86\" UR640S","qty":2,"online":true},{"category":"Touchpanel","model":"Extron TLP Pro 725T","qty":1,"online":true},{"category":"Controller","model":"Extron IN1808","qty":1,"online":false},{"category":"Switcher","model":"Extron IN1808","qty":1,"online":true},{"category":"Document Camera","model":"AVerVision F50-8M","qty":1,"online":true},{"category":"Amplifier","model":"Extron IN1808","qty":1,"online":false},{"category":"Power Conditioner","model":"Furman CN-2400S","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 230 Tx / Rx","qty":1,"online":true}],"_room_online":false,"_photo_count":4,"_contacts":{"CTL Support":null,"AV Support":{"name":"Parker Patel","email":"parker.patel@campus.edu","phone":"(706) 555-7235"},"Department Contact":{"name":"Reese Reed","email":"reese.reed@campus.edu","phone":"(706) 555-3532"},"Computer Support":{"name":"Elliot Brooks","email":"elliot.brooks@campus.edu","phone":"(706) 555-3128"}}},{"Building":"Moore-Rooker Hall","Room":"A108","Room Type":"Other","Department":"Terry College of Business","College":"Terry College of Business","Primary Support Unit":"Terry College of Business","Zone":"MLC","_ctl_supported":false,"Seating Capacity":"","Room Square Footage":396.0,"Seating Configuration":"","Floor Type":"Level","Notes":"Support Space","Latest Update":"2017 - New Install - OnePath Systems","Last Update Year":2017,"_equipment":[],"_room_online":true,"_photo_count":3,"_contacts":{"CTL Support":null,"AV Support":{"name":"Avery Coleman","email":"avery.coleman@campus.edu","phone":"(706) 555-6777"},"Department Contact":{"name":"Riley Santos","email":"riley.santos@campus.edu","phone":"(706) 555-8072"},"Computer Support":{"name":"Taylor Nguyen","email":"taylor.nguyen@campus.edu","phone":"(706) 555-3967"}}},{"Building":"Lamar Dodd School of Art","Room":"N215","Room Type":"","Department":"Lamar Dodd School of Art","College":"Franklin College of Arts and Sciences","Primary Support Unit":"Franklin College of Arts and Sciences","Zone":"South","_ctl_supported":false,"Seating Capacity":20.0,"Room Square Footage":1007.0,"Seating Configuration":"Movable Tables - Movable Seating","Floor Type":"Level","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[{"category":"Projector","model":"NEC NP50","qty":1,"online":true}],"_room_online":true,"_photo_count":6,"_contacts":{"CTL Support":null,"AV Support":{"name":"Jordan Kim","email":"jordan.kim@campus.edu","phone":"(706) 555-6940"},"Department Contact":{"name":"Quinn Nguyen","email":"quinn.nguyen@campus.edu","phone":"(706) 555-4161"},"Computer Support":{"name":"Morgan Santos","email":"morgan.santos@campus.edu","phone":"(706) 555-9740"}}},{"Building":"Zell Miller Learning Center","Room":"213","Room Type":"Classroom","Department":"UGA Libraries","College":"Senior Vice President for Academic Affairs & Provost","Primary Support Unit":"Center for Teaching and Learning","Zone":"MLC","_ctl_supported":true,"Seating Capacity":88.0,"Room Square Footage":1768.0,"Seating Configuration":"Fixed Tables - Movable Seats","Floor Type":"Tiered","Notes":"","Latest Update":"2021 - Complete Upgrade","Last Update Year":2021,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Malone Arches D","qty":1,"online":true},{"category":"Projector","model":"Epson PowerLite L610U","qty":1,"online":true},{"category":"Touchpanel","model":"Extron TLP Pro 1025T","qty":1,"online":true},{"category":"Controller","model":"Extron DTP CrossPoint 82 4K","qty":1,"online":true},{"category":"Switcher","model":"Extron DTP CrossPoint 82 4K","qty":1,"online":true},{"category":"Microphone","model":"Lavalier \u2013 Shure ULXD1","qty":1,"online":true},{"category":"Microphone","model":"Handheld \u2013 Shure ULXD2","qty":1,"online":true},{"category":"Microphone","model":"Receiver \u2013 Shure ULXD4","qty":1,"online":true},{"category":"Document Camera","model":"Wolfvision VZ-8light4","qty":1,"online":true},{"category":"Blu-Ray / DVD Player","model":"LG Blu-Ray","qty":1,"online":true},{"category":"Amplifier","model":"QSC CX302","qty":1,"online":true},{"category":"Speaker","model":"Frazier Wall","qty":2,"online":true},{"category":"Power Conditioner","model":"Furman CN-20MP","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 330 Tx / Rx","qty":1,"online":true},{"category":"Video Conferencing","model":"Logitech","qty":1,"online":true}],"_room_online":true,"_photo_count":7,"_contacts":{"CTL Support":{"name":"Quinn Bennett","email":"quinn.bennett@campus.edu","phone":"(706) 555-4285"},"AV Support":{"name":"Elliot Kim","email":"elliot.kim@campus.edu","phone":"(706) 555-4907"},"Department Contact":{"name":"Parker Santos","email":"parker.santos@campus.edu","phone":"(706) 555-7061"},"Computer Support":{"name":"Casey Santos","email":"casey.santos@campus.edu","phone":"(706) 555-5013"}}},{"Building":"Driftmier Engineering Center","Room":"1350","Room Type":"","Department":"College of Engineering","College":"College of Engineering","Primary Support Unit":"College of Engineering","Zone":"SLC","_ctl_supported":false,"Seating Capacity":40.0,"Room Square Footage":1588.0,"Seating Configuration":"","Floor Type":"Level","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[],"_room_online":true,"_photo_count":8,"_contacts":{"CTL Support":null,"AV Support":{"name":"Jordan Hayes","email":"jordan.hayes@campus.edu","phone":"(706) 555-6330"},"Department Contact":{"name":"Riley Bennett","email":"riley.bennett@campus.edu","phone":"(706) 555-7365"},"Computer Support":{"name":"Reese Patel","email":"reese.patel@campus.edu","phone":"(706) 555-2124"}}},{"Building":"Denmark Hall","Room":"201","Room Type":"","Department":"College of Environment and Design","College":"College of Environment and Design","Primary Support Unit":"College of Environment and Design","Zone":"North","_ctl_supported":false,"Seating Capacity":"","Room Square Footage":"","Seating Configuration":"","Floor Type":"","Notes":"","Latest Update":"2026 - Client Funded / Intended / moved to Tanner 102 TD 23831204","Last Update Year":2026,"_equipment":[],"_room_online":true,"_photo_count":9,"_contacts":{"CTL Support":null,"AV Support":{"name":"Casey Coleman","email":"casey.coleman@campus.edu","phone":"(706) 555-1047"},"Department Contact":{"name":"Reese Coleman","email":"reese.coleman@campus.edu","phone":"(706) 555-1924"},"Computer Support":{"name":"Quinn Hayes","email":"quinn.hayes@campus.edu","phone":"(706) 555-2983"}}},{"Building":"Rivers Crossing","Room":"113","Room Type":"Classroom","Department":"College of Education","College":"College of Education","Primary Support Unit":"College of Education","Zone":"South","_ctl_supported":false,"Seating Capacity":20.0,"Room Square Footage":569.0,"Seating Configuration":"Movable Tables - Movable Seating","Floor Type":"Level","Notes":"","Latest Update":"","Last Update Year":null,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Malone","qty":1,"online":true},{"category":"Projector","model":"Epson G5650W","qty":1,"online":true},{"category":"Touchpanel","model":"Crestron QM-FTCC-TPS4","qty":1,"online":true},{"category":"Controller","model":"Crestron DMPS-100-C","qty":1,"online":false},{"category":"Switcher","model":"Crestron DMPS-100-C","qty":1,"online":true},{"category":"Amplifier","model":"Crown XLS 202","qty":1,"online":true},{"category":"Speaker","model":"Extron Wall","qty":1,"online":true},{"category":"Video Conferencing","model":"Tandberg","qty":1,"online":false}],"_room_online":false,"_photo_count":6,"_contacts":{"CTL Support":null,"AV Support":{"name":"Avery Brooks","email":"avery.brooks@campus.edu","phone":"(706) 555-6559"},"Department Contact":{"name":"Quinn Bennett","email":"quinn.bennett@campus.edu","phone":"(706) 555-4925"},"Computer Support":{"name":"Riley Hayes","email":"riley.hayes@campus.edu","phone":"(706) 555-1943"}}},{"Building":"Baldwin Hall","Room":"101D","Room Type":"Classroom","Department":"Political Science","College":"School of Public and International Affairs","Primary Support Unit":"School of Public and International Affairs","Zone":"North","_ctl_supported":false,"Seating Capacity":48.0,"Room Square Footage":1185.0,"Seating Configuration":"Movable Tables - Movable Chairs","Floor Type":"Level","Notes":"SCALE-UP Classroom","Latest Update":"2022 - Complete Upgrade","Last Update Year":2022,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Middle Atlantic L5 series (large)","qty":1,"online":true},{"category":"Projector","model":"Epson G7500U","qty":1,"online":true},{"category":"Projector","model":"Epson G7500U","qty":1,"online":true},{"category":"Wall Display","model":"(8) Samsung  55\" Displays at 8 student stations","qty":1,"online":true},{"category":"Touchpanel","model":"AMX MT-1002","qty":1,"online":true},{"category":"Controller","model":"AMX NX-3200","qty":1,"online":true},{"category":"Switcher","model":"Extron IN1808","qty":1,"online":true},{"category":"Microphone","model":"Lavalier \u2013 Shure QLXD4","qty":1,"online":true},{"category":"Microphone","model":"Handheld \u2013 Shure Gooseneck Mic on Podium","qty":1,"online":false},{"category":"Microphone","model":"Receiver \u2013 Shure QLXD4","qty":1,"online":true},{"category":"Blu-Ray / DVD Player","model":"LG Blu-Ray","qty":1,"online":true},{"category":"Amplifier","model":"Extron XPA 2001","qty":1,"online":true},{"category":"Speaker","model":"Bose 70v Ceiling","qty":8,"online":true},{"category":"Power Conditioner","model":"Furman CN-2400S","qty":1,"online":true},{"category":"HDMI Extender","model":"AMX DX Link Tx / Rx (2)  / Extron 230 Tx / Rx","qty":1,"online":true}],"_room_online":false,"_photo_count":4,"_contacts":{"CTL Support":null,"AV Support":{"name":"Drew Foster","email":"drew.foster@campus.edu","phone":"(706) 555-1210"},"Department Contact":{"name":"Quinn Coleman","email":"quinn.coleman@campus.edu","phone":"(706) 555-8137"},"Computer Support":{"name":"Drew Coleman","email":"drew.coleman@campus.edu","phone":"(706) 555-9094"}}},{"Building":"Meigs Hall","Room":"218","Room Type":"General Classroom","Department":"Institute of Higher Education","College":"Institute of Higher Education","Primary Support Unit":"Institute of Higher Education","Zone":"North","_ctl_supported":false,"Seating Capacity":24.0,"Room Square Footage":659.0,"Seating Configuration":"Movable Tables - Movable Seats","Floor Type":"Level","Notes":"","Latest Update":"2019 - Complete Upgrade","Last Update Year":2019,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Computer Comforts Hideaway","qty":1,"online":true},{"category":"Projector","model":"Epson PowerLite 5520W","qty":1,"online":true},{"category":"Touchpanel","model":"AMX MST-701","qty":1,"online":false},{"category":"Controller","model":"AMX NX-3200","qty":1,"online":true},{"category":"Switcher","model":"Extron IN1606","qty":1,"online":true},{"category":"Document Camera","model":"Wolfvision VZ-8plus3","qty":1,"online":true},{"category":"Blu-Ray / DVD Player","model":"Panasonic Blu-Ray","qty":1,"online":true},{"category":"Amplifier","model":"Extron XPA 1002","qty":1,"online":true},{"category":"Speaker","model":"JBL Control 23 Wall","qty":2,"online":true},{"category":"Power Conditioner","model":"FSR SPC-20","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 230 Tx / Rx","qty":1,"online":true},{"category":"Video Conferencing","model":"Zoom Kit","qty":1,"online":true}],"_room_online":false,"_photo_count":5,"_contacts":{"CTL Support":null,"AV Support":{"name":"Casey Hayes","email":"casey.hayes@campus.edu","phone":"(706) 555-6218"},"Department Contact":{"name":"Sam Hayes","email":"sam.hayes@campus.edu","phone":"(706) 555-8365"},"Computer Support":{"name":"Jordan Kim","email":"jordan.kim@campus.edu","phone":"(706) 555-3458"}}},{"Building":"Park Hall","Room":"80","Room Type":"Classroom","Department":"English","College":"Franklin College of Arts and Sciences","Primary Support Unit":"Franklin College of Arts and Sciences","Zone":"North","_ctl_supported":false,"Seating Capacity":25.0,"Room Square Footage":364.0,"Seating Configuration":"Desk/Chair Units - Movable","Floor Type":"Level","Notes":"","Latest Update":"2014 - Complete Upgrade","Last Update Year":2014,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Space Saver - Computer Comforts","qty":1,"online":true},{"category":"Projector","model":"Epson G5650W","qty":1,"online":true},{"category":"Touchpanel","model":"AMX NXD-435P","qty":1,"online":true},{"category":"Controller","model":"AMX NI-3100","qty":1,"online":true},{"category":"Switcher","model":"Extron IN1606","qty":1,"online":true},{"category":"Blu-Ray / DVD Player","model":"Sony Blu-Ray","qty":1,"online":true},{"category":"Amplifier","model":"Extron MPA 401","qty":1,"online":true},{"category":"Speaker","model":"Tannoy CVS4","qty":2,"online":true},{"category":"Power Conditioner","model":"FSR SPC-20","qty":1,"online":true},{"category":"HDMI Extender","model":"Extron 230 Tx / Rx","qty":1,"online":true}],"_room_online":true,"_photo_count":3,"_contacts":{"CTL Support":null,"AV Support":{"name":"Morgan Foster","email":"morgan.foster@campus.edu","phone":"(706) 555-6718"},"Department Contact":{"name":"Reese Ward","email":"reese.ward@campus.edu","phone":"(706) 555-4384"},"Computer Support":{"name":"Jordan Coleman","email":"jordan.coleman@campus.edu","phone":"(706) 555-9589"}}},{"Building":"Denmark Hall","Room":"103","Room Type":"Classroom","Department":"College of Environment and Design","College":"College of Environment and Design","Primary Support Unit":"College of Environment and Design","Zone":"North","_ctl_supported":false,"Seating Capacity":18.0,"Room Square Footage":397.0,"Seating Configuration":"Fixed Table - Movable Chairs","Floor Type":"Level","Notes":"","Latest Update":"2026 - Client Funded / Intended / We didn't install","Last Update Year":2026,"_equipment":[{"category":"Instructor Computer","model":"Windows","qty":1,"online":true},{"category":"Equipment Cabinet","model":"Custom - In Wall","qty":1,"online":true},{"category":"Projector","model":"Sharp Notevision PG-A10X","qty":1,"online":true},{"category":"Switcher","model":"ATEN VS 104 - VGA Switcher","qty":1,"online":true},{"category":"Speaker","model":"PC Speakers","qty":1,"online":true}],"_room_online":true,"_photo_count":8,"_contacts":{"CTL Support":null,"AV Support":{"name":"Avery Ellis","email":"avery.ellis@campus.edu","phone":"(706) 555-8726"},"Department Contact":{"name":"Casey Bennett","email":"casey.bennett@campus.edu","phone":"(706) 555-8080"},"Computer Support":{"name":"Taylor Santos","email":"taylor.santos@campus.edu","phone":"(706) 555-7496"}}}];
+const CATALOG = {"Instructor Computer":[{"model":"Mac","last_price":4100},{"model":"Windows","last_price":499}],"Equipment Cabinet":[{"model":"Built-In","last_price":799},{"model":"Cappy","last_price":3400},{"model":"Computer Comforts Hideaway","last_price":1200},{"model":"Computer Comforts Power Lift","last_price":1899},{"model":"Computer Comforts Power Lift & Free Standing Rack","last_price":149},{"model":"Computer Comforts Universal","last_price":1200},{"model":"Custom","last_price":499},{"model":"Custom - In Wall","last_price":149},{"model":"Custom - In wall","last_price":499},{"model":"Malone","last_price":799},{"model":"Malone Arches AAA","last_price":1899},{"model":"Malone Arches D","last_price":3400},{"model":"Malone MXT 701","last_price":3400},{"model":"Middle Atlantic L5 series (large)","last_price":2200},{"model":"Open Front -Rear Access Door","last_price":2750},{"model":"Rack - Wall Mounted","last_price":349},{"model":"Space Saver - Computer Comforts","last_price":2200},{"model":"Spectrum - Freedom XRS eLite","last_price":1899},{"model":"Table","last_price":799}],"Projector":[{"model":"Epson EB-PU1008W","last_price":499},{"model":"Epson G5450W","last_price":349},{"model":"Epson G5650W","last_price":499},{"model":"Epson G6050W","last_price":1450},{"model":"Epson G6070W","last_price":2200},{"model":"Epson G7500U","last_price":499},{"model":"Epson PowerLite 5520W","last_price":1899},{"model":"Epson PowerLite L1100U","last_price":249},{"model":"Epson PowerLite L610U","last_price":2750},{"model":"Epson PowerLite L615U","last_price":3400},{"model":"Epson PowerLite L630U","last_price":499},{"model":"NEC NP2200","last_price":6800},{"model":"NEC NP50","last_price":6800},{"model":"Panasonic PT-DZ21KU","last_price":899},{"model":"Panasonic PT-RZ120LW","last_price":899},{"model":"Panasonic PTDW740","last_price":650},{"model":"Sharp Notevision PG-A10X","last_price":1450},{"model":"Sharp XG-P25X","last_price":1200}],"Switcher":[{"model":"AMX DVX-2255-HD-T","last_price":249},{"model":"AMX DVX-3150-HD-SP","last_price":249},{"model":"AMX DVX-3255-HD-T","last_price":4100},{"model":"ATEN VS 104 - VGA Switcher","last_price":249},{"model":"Crestron DMPS-100-C","last_price":2200},{"model":"Extron DTP CrossPoint 82 4K","last_price":2750},{"model":"Extron DTP CrossPoint 82 4K IPCP Q MA 70","last_price":6800},{"model":"Extron DTP Crosspoint 82 4K","last_price":5200},{"model":"Extron DTP Crosspoint 82 4k","last_price":650},{"model":"Extron DTP Crosspoint 84 4K","last_price":1200},{"model":"Extron IN1606","last_price":6800},{"model":"Extron IN1808","last_price":5200},{"model":"Extron MLC 53 Wall Plate","last_price":2750},{"model":"Extron MPS 409","last_price":249}],"Amplifier":[{"model":"AMX DVX-2255-HD-T","last_price":1450},{"model":"Bi-Amp Nexia TC / Extron XPA 2003C","last_price":799},{"model":"Crest Audio FA601","last_price":149},{"model":"Crestron DMPS-100-C","last_price":1200},{"model":"Crown XLS 202","last_price":149},{"model":"EV AP2600A SA","last_price":1899},{"model":"Extron DTP CrossPoint 82 4K IPCP Q MA 70","last_price":2750},{"model":"Extron IN1808","last_price":899},{"model":"Extron MPA 401","last_price":3400},{"model":"Extron MPA 601","last_price":499},{"model":"Extron XPA 1002","last_price":2750},{"model":"Extron XPA 2001","last_price":2200},{"model":"Extron XPA 2001 / Tesira Server IO Biamp","last_price":499},{"model":"Lab Gruppen C 5_4X","last_price":1200},{"model":"Lab Gruppen C 5_4X (4) / Extron XPA 2001","last_price":249},{"model":"QSC CX302","last_price":4100},{"model":"QSC ISA 300Ti","last_price":249}],"Speaker":[{"model":"Bose 70v Ceiling","last_price":6800},{"model":"Bose FreeSpace DS 16F Ceiling","last_price":499},{"model":"Bose Wall (2) / Bose Ceiling","last_price":650},{"model":"Community D4LP Ceiling","last_price":799},{"model":"EV Sx100+","last_price":149},{"model":"Extron SF 228T","last_price":1899},{"model":"Extron SF 3PT","last_price":349},{"model":"Extron Wall","last_price":1450},{"model":"Frazier Wall","last_price":349},{"model":"JBL Ceiling","last_price":149},{"model":"JBL Control 23 Wall","last_price":4100},{"model":"JBL Sub (6)  / JBL Mid-high","last_price":1450},{"model":"PC Speakers","last_price":799},{"model":"QSC KLA","last_price":899},{"model":"Tannoy CVS4","last_price":249},{"model":"Tannoy CVS4 Micro","last_price":1450},{"model":"Tannoy CVS6","last_price":6800}],"Touchpanel":[{"model":"AMX","last_price":1450},{"model":"AMX MST-701","last_price":349},{"model":"AMX MT-1002","last_price":2200},{"model":"AMX NXD-435P","last_price":6800},{"model":"AMX NXT-CV7","last_price":349},{"model":"Crestron 2NFTTPS4B","last_price":1899},{"model":"Crestron QM-FTCC-TPS4","last_price":6800},{"model":"Extron TLP Pro 1025T","last_price":1899},{"model":"Extron TLP Pro 725M","last_price":3400},{"model":"Extron TLP Pro 725T","last_price":3400}],"Controller":[{"model":"AMX DVX-2255-HD-T","last_price":1899},{"model":"AMX NI-3100","last_price":5200},{"model":"AMX NX-3200","last_price":349},{"model":"Crestron DMPS-100-C","last_price":2200},{"model":"Extron DTP CrossPoint 82 4K","last_price":1450},{"model":"Extron IN1808","last_price":650},{"model":"Extron IPCP Pro 355MQ xi","last_price":650},{"model":"Extron IPCP Pro 360Q xi","last_price":650},{"model":"Extron IPCP Pro 460Q xi","last_price":349},{"model":"Extron TLCA 1 Adapter","last_price":5200}],"Microphone":[{"model":"Handheld \u2013 Shure Gooseneck Mic on Podium","last_price":3400},{"model":"Handheld \u2013 Shure SM58","last_price":2750},{"model":"Handheld \u2013 Shure ULX2","last_price":5200},{"model":"Handheld \u2013 Shure ULXD2","last_price":349},{"model":"Lavalier \u2013 Shure PGXD1","last_price":1450},{"model":"Lavalier \u2013 Shure QLXD1","last_price":650},{"model":"Lavalier \u2013 Shure QLXD4","last_price":1450},{"model":"Lavalier \u2013 Shure SLX1","last_price":2750},{"model":"Lavalier \u2013 Shure ULX1","last_price":1200},{"model":"Lavalier \u2013 Shure ULXD1","last_price":249},{"model":"Receiver \u2013 Shure BLX4R","last_price":1200},{"model":"Receiver \u2013 Shure PGXD4","last_price":6800},{"model":"Receiver \u2013 Shure QLXD4","last_price":349},{"model":"Receiver \u2013 Shure ULXD4","last_price":1450},{"model":"Receiver \u2013 Shure ULXD4G50","last_price":4100},{"model":"Receiver \u2013 Shure ULXS4","last_price":650}],"Document Camera":[{"model":"AVerVision F50-8M","last_price":5200},{"model":"AVerVision300AF+","last_price":1450},{"model":"HoverCam Ultra 8","last_price":650},{"model":"Wolfvision EYE-12 (ceiling)","last_price":1200},{"model":"Wolfvision VZ-3","last_price":2750},{"model":"Wolfvision VZ-3neo","last_price":499},{"model":"Wolfvision VZ-3neo UHD","last_price":2200},{"model":"Wolfvision VZ-8light","last_price":2200},{"model":"Wolfvision VZ-8light4","last_price":6800},{"model":"Wolfvision VZ-8neo UHD","last_price":650},{"model":"Wolfvision VZ-8plus3","last_price":149}],"Blu-Ray / DVD Player":[{"model":"Denon DN-500BD Blu-ray","last_price":349},{"model":"LG Blu-Ray","last_price":3400},{"model":"Panasonic Blu-Ray","last_price":3400},{"model":"Sony Blu-Ray","last_price":3400}],"Power Conditioner":[{"model":"FSR SPC-20","last_price":5200},{"model":"Furman CN-1800S","last_price":1200},{"model":"Furman CN-20MP","last_price":1200},{"model":"Furman CN-2400S","last_price":799},{"model":"Furman P-8 Pro C","last_price":650},{"model":"Tripp Lite Power Conditioner","last_price":149}],"HDMI Extender":[{"model":"AMX DX Link Tx / Rx (2)  / Extron 230 Tx / Rx","last_price":2200},{"model":"Extron 230 Tx / Rx","last_price":1899},{"model":"Extron 301 Tx / Rx","last_price":149},{"model":"Extron 330 Tx / Rx","last_price":899}],"Video Conferencing":[{"model":"Cisco","last_price":650},{"model":"Logitech","last_price":799},{"model":"Tandberg","last_price":899},{"model":"Vaddio","last_price":149},{"model":"Zoom Kit","last_price":349}],"Wall Display":[{"model":"(2) Smart Board 65\" interactive displays (4065) - (3) Smart Board 55\" interactive displays (4055)Board 55\" interactive displays","last_price":499},{"model":"(8) Samsung  55\" Displays at 8 student stations","last_price":499},{"model":"LG 86\" UR640S","last_price":3400},{"model":"Panasonic 50\" (TH-50PH30)","last_price":249},{"model":"Panasonic TH-65CQE2","last_price":1899},{"model":"Panasonic TH-65CQE2U","last_price":3400},{"model":"Panasonic TH-75CQE2","last_price":650},{"model":"Panasonic TH-86EQ2W","last_price":1450},{"model":"Samsung 50\" display","last_price":799},{"model":"Samsung 55\" (DM55E)","last_price":349},{"model":"Samsung QB65C","last_price":2200},{"model":"Samsung QB85C","last_price":2200},{"model":"Viewsonic 70\" Interactive Display","last_price":1899}]};
+</script>
+<script>
+let mode='public', page='rooms', activeCTLOnly=false, currentRoom=null, activeTab='room';
+const eqCategories = ()=>Object.keys(CATALOG).sort();
+const fmt = v => (v===undefined||v===null||v==='') ? null : String(v);
+
+const sampleHistory=[
+  {who:'D. Ferris (AV Support)', when:'Mar 3, 2026', what:'Replaced projector bulb; verified touchpanel calibration.'},
+  {who:'K. Osei (CTL)', when:'Nov 18, 2025', what:'Updated seating capacity from 82 to 80 after fire-code review.'},
+  {who:'M. Alvarez (Dept. Contact)', when:'Aug 22, 2025', what:'Added note: podium mic intermittent, ticket #4471 filed.'}
+];
+
+/* ---------------- status helpers ---------------- */
+function roomStatus(r){
+  if(!r._equipment.length) return 'none';
+  return r._equipment.every(e=>e.online) ? 'online' : 'offline';
+}
+function statusBadgeHtml(status){
+  const label = status==='online' ? 'Online' : status==='offline' ? 'Offline' : 'No AV';
+  return `<span class="status-badge status-${status}"><span class="status-dot"></span>${label}</span>`;
+}
+
+/* ---------------- dropdowns ---------------- */
+function populateBuildingDropdown(){
+  const sel=document.getElementById('dd-building');
+  const cur = sel.value;
+  const buildings=Array.from(new Set(ROOMS.map(r=>r.Building))).sort();
+  sel.innerHTML='<option value="">All buildings</option>'+buildings.map(b=>`<option value="${b}">${b}</option>`).join('');
+  sel.value = buildings.includes(cur) ? cur : '';
+}
+function populateRoomDropdown(building){
+  const sel=document.getElementById('dd-room');
+  const rooms=ROOMS.filter(r=>!building||r.Building===building).sort((a,b)=>a.Room.localeCompare(b.Room,undefined,{numeric:true}));
+  sel.innerHTML='<option value="">All rooms</option>'+rooms.map(r=>`<option value="${r.Building}||${r.Room}">${r.Room}</option>`).join('');
+}
+document.getElementById('dd-building').addEventListener('change', e=>{ populateRoomDropdown(e.target.value); renderGrid(); });
+document.getElementById('dd-room').addEventListener('change', e=>{
+  if(!e.target.value) return;
+  const [b,room]=e.target.value.split('||');
+  const found=ROOMS.find(r=>r.Building===b && r.Room===room);
+  if(found) openPanel(found);
+});
+document.getElementById('ctl-toggle').addEventListener('click', ()=>{
+  activeCTLOnly=!activeCTLOnly;
+  document.getElementById('ctl-toggle').classList.toggle('active', activeCTLOnly);
+  renderGrid();
+});
+document.getElementById('search').addEventListener('input', renderGrid);
+
+/* ---------------- grid ---------------- */
+function matchesSearch(r,q){
+  if(!q) return true;
+  q=q.toLowerCase();
+  const eqHay = r._equipment.map(e=>e.model).join(' ');
+  const hay=[r.Building,r.Room,r['Room Type'],r.Department,r.College,eqHay].join(' ').toLowerCase();
+  return hay.includes(q);
+}
+function renderGrid(){
+  const q=document.getElementById('search').value.trim();
+  const buildingSel=document.getElementById('dd-building').value;
+  const grid=document.getElementById('grid');
+  const empty=document.getElementById('empty');
+  grid.innerHTML='';
+  const filtered=ROOMS.filter(r=>matchesSearch(r,q) && (!buildingSel||r.Building===buildingSel) && (!activeCTLOnly||r._ctl_supported));
+  document.getElementById('result-count').textContent=filtered.length+' room'+(filtered.length===1?'':'s');
+  empty.style.display=filtered.length===0?'block':'none';
+
+  filtered.forEach(r=>{
+    const status = roomStatus(r);
+    const av = r._contacts['AV Support'];
+    const comp = r._contacts['Computer Support'];
+    const card=document.createElement('button');
+    card.className='plaque';
+    card.innerHTML=`
+      ${statusBadgeHtml(status)}
+      <div class="plaque-idline">${r.Building}<br><span class="room">${r.Room}</span></div>
+      <div class="plaque-tags">
+        ${r.Zone && r.Zone!=='\u2014' ? `<span class="tag">${r.Zone} zone</span>` : ''}
+        ${r._ctl_supported ? '<span class="tag ctl">CTL</span>' : ''}
+      </div>
+      <div class="plaque-contacts">
+        ${av ? `<div><b>AV:</b> ${av.name}</div>` : ''}
+        ${comp ? `<div><b>Computer:</b> ${comp.name}</div>` : ''}
+      </div>`;
+    card.onclick=()=>openPanel(r);
+    grid.appendChild(card);
+  });
+}
+
+/* ---------------- add / decommission room ---------------- */
+document.getElementById('add-room-btn').addEventListener('click', ()=>{
+  const wrap = document.getElementById('add-room-form');
+  if(wrap.innerHTML){ wrap.innerHTML=''; return; }
+  const buildings = Array.from(new Set(ROOMS.map(r=>r.Building))).sort();
+  wrap.innerHTML = `
+    <div class="inline-form">
+      <label>Building
+        <input list="building-list" id="new-building" placeholder="Existing or new building">
+        <datalist id="building-list">${buildings.map(b=>`<option value="${b}">`).join('')}</datalist>
+      </label>
+      <label>Room number<input id="new-room" placeholder="e.g. 214"></label>
+      <label>Room type<input id="new-type" placeholder="e.g. Classroom"></label>
+      <label>Zone<input id="new-zone" placeholder="e.g. North"></label>
+      <button class="btn primary small" id="create-room-btn">Create room</button>
+      <button class="btn small" id="cancel-room-btn">Cancel</button>
+    </div>`;
+  document.getElementById('cancel-room-btn').onclick = ()=>{ wrap.innerHTML=''; };
+  document.getElementById('create-room-btn').onclick = ()=>{
+    const b = document.getElementById('new-building').value.trim();
+    const rm = document.getElementById('new-room').value.trim();
+    if(!b || !rm){ alert('Building and room number are required.'); return; }
+    ROOMS.push({
+      Building:b, Room:rm, 'Room Type':document.getElementById('new-type').value.trim(),
+      Department:'', College:'', 'Primary Support Unit':'', Zone:document.getElementById('new-zone').value.trim()||'\u2014',
+      _ctl_supported:false, 'Seating Capacity':'', 'Room Square Footage':'', 'Seating Configuration':'', 'Floor Type':'',
+      Notes:'New room \u2014 added via prototype demo.', 'Latest Update':'', 'Last Update Year':null,
+      _equipment:[], _room_online:true, _photo_count:0,
+      _contacts:{'CTL Support':null,'AV Support':null,'Department Contact':null,'Computer Support':null}
+    });
+    wrap.innerHTML='';
+    populateBuildingDropdown(); populateRoomDropdown(document.getElementById('dd-building').value); renderGrid();
+  };
+});
+
+/* ---------------- panel: room & contacts tab ---------------- */
+function locationFieldsHtml(room, editable){
+  const rows = [
+    ['Building','Building',false],['Room','Room',false],['Room type','Room Type',true],
+    ['Department','Department',true],['College','College',true],['Zone','Zone',true],
+    ['Seating capacity','Seating Capacity',true],['Square footage','Room Square Footage',true],
+    ['Seating configuration','Seating Configuration',true],['Floor type','Floor Type',true],
+    ['Notes','Notes',true],['Latest update','Latest Update',true]
+  ];
+  let html='<div class="spec-section-title">Room</div>';
+  rows.forEach(([label,key,ed])=>{
+    const val=fmt(room[key]);
+    if(editable && ed){
+      html += `<div class="spec-row"><span class="k">${label}</span><input data-key="${key}" value="${val?val.replace(/"/g,'&quot;'):''}" placeholder="&mdash;"></div>`;
+    } else {
+      html += `<div class="spec-row"><span class="k">${label}</span><span class="v ${val?'':'empty'}">${val?val:'Not recorded'}</span></div>`;
+    }
+  });
+  return html;
+}
+function contactsHtml(room, editable){
+  const roles=['CTL Support','AV Support','Department Contact','Computer Support'];
+  let html = '<div class="spec-section-title">Support contacts</div>';
+  let any=false;
+  roles.forEach(role=>{
+    const c=room._contacts[role];
+    if(!c && !editable) return;
+    any=true;
+    if(editable){
+      html += `<div class="contact-card"><div class="contact-role">${role}</div>
+        <div class="spec-row" style="border:none;padding:5px 0;"><span class="k">Name</span><input value="${c?c.name:''}" placeholder="&mdash;"></div>
+        <div class="spec-row" style="border:none;padding:5px 0;"><span class="k">Email</span><input value="${c?c.email:''}" placeholder="&mdash;"></div>
+        <div class="spec-row" style="border:none;padding:5px 0;"><span class="k">Phone</span><input value="${c?c.phone:''}" placeholder="&mdash;"></div>
+      </div>`;
+    } else {
+      html += `<div class="contact-card"><div class="contact-role">${role}</div>
+        <div class="contact-name">${c.name}</div><div class="contact-line">${c.email}</div><div class="contact-line">${c.phone}</div></div>`;
+    }
+  });
+  if(!any) html += `<div class="locked-note">No support contacts on file for this room yet.</div>`;
+  return html;
+}
+
+/* ---------------- panel: equipment tab ---------------- */
+function equipmentTabHtml(room, editable){
+  let html = `<div class="locked-note"><span>&#128225;</span><span>Online/offline status shown per item is simulated for this prototype. Once connected, this will pull live from GVE.</span></div>`;
+  const grouped = {};
+  room._equipment.forEach((e,i)=>{ (grouped[e.category] = grouped[e.category]||[]).push({...e, _idx:i}); });
+  const cats = Object.keys(grouped).sort();
+  if(cats.length===0 && !editable) html += `<div class="locked-note">No equipment on file for this room.</div>`;
+  cats.forEach(cat=>{
+    html += `<div class="eq-cat-block"><div class="eq-cat-title">${cat}</div>`;
+    grouped[cat].forEach(e=>{
+      if(editable){
+        const options=(CATALOG[cat]||[]).map(i=>i.model);
+        if(!options.includes(e.model)) options.unshift(e.model);
+        html += `<div class="eq-item">
+          <select class="model-select" data-idx="${e._idx}">${options.map(o=>`<option ${o===e.model?'selected':''}>${o}</option>`).join('')}</select>
+          <input class="qty-input" data-idx="${e._idx}" type="number" min="1" value="${e.qty}">
+          <button class="eq-remove" data-remove="${e._idx}" title="Remove">&times;</button>
+        </div>`;
+      } else {
+        html += `<div class="eq-item">
+          <span class="model">${e.model}</span>
+          <span class="qty">&times;${e.qty}</span>
+          ${statusBadgeHtml(e.online?'online':'offline')}
+        </div>`;
+      }
+    });
+    html += `</div>`;
+  });
+  if(editable){
+    const catOpts = eqCategories().map(c=>`<option value="${c}">${c}</option>`).join('');
+    html += `<div class="add-eq-row">
+      <select id="add-eq-cat">${catOpts}</select>
+      <select id="add-eq-model"></select>
+      <input id="add-eq-qty" class="qty-input" type="number" min="1" value="1">
+      <button class="btn small" id="add-eq-btn">+ Add equipment</button>
+    </div>`;
+  }
+  return html;
+}
+function wireEquipmentTab(){
+  const catSel = document.getElementById('add-eq-cat');
+  const modelSel = document.getElementById('add-eq-model');
+  if(!catSel) return;
+  function refreshModels(){
+    const models = (CATALOG[catSel.value]||[]).map(i=>i.model);
+    modelSel.innerHTML = models.map(m=>`<option>${m}</option>`).join('');
+  }
+  catSel.onchange = refreshModels;
+  refreshModels();
+  document.getElementById('add-eq-btn').onclick = ()=>{
+    currentRoom._equipment.push({category:catSel.value, model:modelSel.value, qty:parseInt(document.getElementById('add-eq-qty').value)||1, online:true});
+    renderPanelBody();
+  };
+  document.querySelectorAll('[data-remove]').forEach(btn=>{
+    btn.onclick = ()=>{ currentRoom._equipment.splice(parseInt(btn.dataset.remove),1); renderPanelBody(); };
+  });
+}
+
+/* ---------------- photos / history ---------------- */
+function photosHtml(room){
+  let tiles=''; for(let i=1;i<=room._photo_count;i++){ tiles+=`<div class="photo-tile">&#128247;<span>Photo ${i}</span></div>`; }
+  return `<div class="locked-note"><span>&#128444;&#65039;</span><span>${room._photo_count} placeholder photos &mdash; real images will pull from wherever storage is decided (currently OneDrive).</span></div><div class="photo-grid">${tiles}</div>`;
+}
+function historyHtml(){
+  let html='';
+  sampleHistory.forEach(h=>{ html+=`<div class="history-item"><span class="who">${h.who}</span><span class="when">${h.when}</span><div class="what">${h.what}</div></div>`; });
+  html += `<div class="locked-note"><span>&#128203;</span><span>Sample history for design purposes. In the real app every edit logs automatically &mdash; who, when, and exactly what changed.</span></div>`;
+  return html;
+}
+
+/* ---------------- panel orchestration ---------------- */
+function tabsForMode(){
+  if(mode==='public') return [['room','Room & support contacts'],['equipment','Equipment list'],['photos','Photos']];
+  if(mode==='editor') return [['room','Room & support contacts'],['equipment','Equipment list'],['photos','Photos'],['history','History']];
+  return [];
+}
+function renderPanelBody(){
+  const body=document.querySelector('.panel-body');
+  const editable = mode==='editor';
+  if(mode==='student'){ body.innerHTML = contactsHtml(currentRoom,false); return; }
+  if(activeTab==='room'){
+    body.innerHTML = locationFieldsHtml(currentRoom,editable) + contactsHtml(currentRoom,editable);
+  } else if(activeTab==='equipment'){
+    body.innerHTML = equipmentTabHtml(currentRoom, editable);
+    wireEquipmentTab();
+  } else if(activeTab==='photos'){
+    body.innerHTML = photosHtml(currentRoom);
+  } else if(activeTab==='history'){
+    body.innerHTML = historyHtml();
+  }
+}
+function openPanel(room){
+  currentRoom=room; activeTab='room';
+  const panel=document.getElementById('panel');
+  const editable = mode==='editor';
+  const tabs=tabsForMode();
+  const status = roomStatus(room);
+  panel.innerHTML=`
+    <div class="panel-head">
+      <button class="panel-close" id="panel-close" aria-label="Close">&times;</button>
+      <div class="panel-idline">${room.Building}<br>${room.Room}</div>
+      <div class="panel-sub">${room.Department?room.Department+' &middot; ':''}${room.Zone&&room.Zone!=='\u2014'?room.Zone+' zone &middot; ':''}${statusBadgeHtml(status)}</div>
+    </div>
+    ${tabs.length?`<div class="tabs">${tabs.map((t,i)=>`<button class="tab ${i===0?'active':''}" data-tab="${t[0]}">${t[1]}</button>`).join('')}</div>`:''}
+    <div class="panel-body"></div>
+    ${editable?`<div class="save-bar"><button class="btn danger" id="decommission-btn">Decommission room</button><span style="display:flex;gap:10px;"><button class="btn" id="cancel-btn">Cancel</button><button class="btn primary" id="save-btn">Save changes</button></span></div>`:''}
+  `;
+  renderPanelBody();
+  document.getElementById('panel-close').onclick = closePanel;
+  panel.querySelectorAll('.tab').forEach(t=>{
+    t.onclick=()=>{ activeTab=t.dataset.tab; panel.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); renderPanelBody(); };
+  });
+  if(editable){
+    document.getElementById('save-btn').onclick = ()=>{
+      const btn=document.getElementById('save-btn'); btn.textContent='Saved \u2713';
+      setTimeout(()=>{ btn.textContent='Save changes'; },1400);
+    };
+    document.getElementById('cancel-btn').onclick = closePanel;
+    document.getElementById('decommission-btn').onclick = ()=>{
+      if(confirm(`Decommission ${room.Building} ${room.Room}? This removes it from the directory.`)){
+        const idx = ROOMS.indexOf(room);
+        if(idx>-1) ROOMS.splice(idx,1);
+        closePanel(); populateBuildingDropdown(); populateRoomDropdown(''); renderGrid();
+      }
+    };
+  }
+  document.getElementById('overlay').classList.add('open');
+}
+function closePanel(){ document.getElementById('overlay').classList.remove('open'); }
+document.getElementById('overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') closePanel(); });
+
+/* ---------------- catalog page ---------------- */
+function renderCatalogPage(){
+  const el=document.getElementById('page-catalog');
+  let html = `<div class="catalog-header-row">
+      <div class="locked-note" style="margin:0;flex:1;"><span>&#128193;</span><span>Add models here, then pick them from a dropdown when editing a room's equipment list. Prices shown are placeholders for this prototype.</span></div>
+      <button class="btn small" id="add-cat-btn" style="margin-left:14px;">+ Add category</button>
+    </div>
+    <div id="new-cat-form"></div>`;
+  Object.keys(CATALOG).sort().forEach(cat=>{
+    const items=CATALOG[cat];
+    html += `<div class="catalog-section">
+      <h3>${cat} <span class="catalog-count">${items.length} model${items.length===1?'':'s'}</span></h3>
+      <table class="catalog-table">
+        <thead><tr><th>Model</th><th style="width:130px;">Last price paid</th></tr></thead>
+        <tbody>${items.map(i=>`<tr><td><input value="${i.model.replace(/"/g,'&quot;')}"></td><td><input value="$${i.last_price.toLocaleString()}"></td></tr>`).join('')}</tbody>
+      </table>
+      <button class="btn small" style="margin-top:8px;" data-add-model="${cat}">+ Add model</button>
+    </div>`;
+  });
+  el.innerHTML = html;
+  document.getElementById('add-cat-btn').onclick = ()=>{
+    const wrap = document.getElementById('new-cat-form');
+    if(wrap.innerHTML){ wrap.innerHTML=''; return; }
+    wrap.innerHTML = `<div class="inline-form">
+      <label>New category name<input id="new-cat-name" placeholder="e.g. Wireless Presentation Hub"></label>
+      <button class="btn primary small" id="create-cat-btn">Create category</button>
+      <button class="btn small" id="cancel-cat-btn">Cancel</button>
+    </div>`;
+    document.getElementById('cancel-cat-btn').onclick = ()=>{ wrap.innerHTML=''; };
+    document.getElementById('create-cat-btn').onclick = ()=>{
+      const name = document.getElementById('new-cat-name').value.trim();
+      if(!name){ return; }
+      if(!CATALOG[name]) CATALOG[name] = [];
+      renderCatalogPage();
+    };
+  };
+  document.querySelectorAll('[data-add-model]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const cat = btn.dataset.addModel;
+      const name = prompt('New model name for "'+cat+'":');
+      if(!name) return;
+      CATALOG[cat].push({model:name, last_price:0});
+      renderCatalogPage();
+    };
+  });
+}
+
+/* ---------------- reports page ---------------- */
+function renderReportsPage(){
+  const el=document.getElementById('page-reports');
+  el.innerHTML = `
+    <div class="report-card">
+      <h4>Equipment lookup</h4>
+      <div class="report-controls">
+        <select id="rep-cat" class="dd"></select>
+        <select id="rep-model" class="dd"></select>
+      </div>
+      <div id="rep-result"></div>
+    </div>
+    <div class="report-card">
+      <h4>Lifecycle refresh candidates</h4>
+      <div class="report-controls">
+        <label style="font-size:12.5px;opacity:.75;display:flex;align-items:center;gap:8px;">Flag rooms not updated since before
+          <input id="rep-year" type="number" value="2020" style="width:80px;padding:6px 8px;border:1px solid var(--line-strong);border-radius:3px;background:var(--card);color:var(--ink);">
+        </label>
+      </div>
+      <div id="rep-lifecycle"></div>
+    </div>
+  `;
+  const catSel=document.getElementById('rep-cat');
+  catSel.innerHTML = eqCategories().map(c=>`<option>${c}</option>`).join('');
+  function refreshModelSel(){
+    const modelSel=document.getElementById('rep-model');
+    modelSel.innerHTML = (CATALOG[catSel.value]||[]).map(i=>`<option>${i.model}</option>`).join('');
+    refreshResult();
+  }
+  function refreshResult(){
+    const cat=catSel.value, model=document.getElementById('rep-model').value;
+    let ctlCount=0, nonCtlCount=0;
+    ROOMS.forEach(r=>{
+      r._equipment.forEach(e=>{
+        if(e.category===cat && e.model===model){
+          if(r._ctl_supported) ctlCount += e.qty; else nonCtlCount += e.qty;
+        }
+      });
+    });
+    document.getElementById('rep-result').innerHTML = `
+      <div class="result-tile">
+        <div><div class="num">${ctlCount}</div><div class="lbl">in CTL-supported rooms</div></div>
+        <div><div class="num">${nonCtlCount}</div><div class="lbl">in non-CTL rooms</div></div>
+        <div><div class="num">${ctlCount+nonCtlCount}</div><div class="lbl">total (sample data)</div></div>
+      </div>`;
+  }
+  catSel.onchange = refreshModelSel;
+  document.getElementById('rep-model').onchange = refreshResult;
+  refreshModelSel();
+
+  function refreshLifecycle(){
+    const threshold = parseInt(document.getElementById('rep-year').value)||0;
+    const withYear = ROOMS.filter(r=>r['Last Update Year']).sort((a,b)=>a['Last Update Year']-b['Last Update Year']);
+    let html = withYear.slice(0,12).map(r=>`
+      <div class="lifecycle-row"><span>${r.Building} &middot; ${r.Room}</span>
+        <span class="yr ${r['Last Update Year']<threshold?'stale':''}">${r['Last Update Year']}</span></div>`).join('');
+    if(!html) html = '<div class="locked-note">No install-year data in this sample.</div>';
+    document.getElementById('rep-lifecycle').innerHTML = html + `<div class="locked-note" style="margin-top:12px;"><span>&#128197;</span><span>Showing the 12 oldest installs in this sample (full dataset would show more). Rows in red were last updated before your threshold year.</span></div>`;
+  }
+  document.getElementById('rep-year').oninput = refreshLifecycle;
+  refreshLifecycle();
+}
+
+/* ---------------- mode & page switching ---------------- */
+function setMode(m){
+  mode=m;
+  ['public','student','editor'].forEach(x=>document.getElementById('btn-'+x).classList.toggle('active', x===m));
+  document.getElementById('page-tabs').style.display = m==='editor' ? 'flex' : 'none';
+  document.getElementById('add-room-btn').style.display = m==='editor' ? 'inline-block' : 'none';
+  if(m!=='editor'){ setPage('rooms'); document.getElementById('add-room-form').innerHTML=''; }
+  if(currentRoom && document.getElementById('overlay').classList.contains('open')) openPanel(currentRoom);
+  renderGrid();
+}
+function setPage(p){
+  page=p;
+  document.querySelectorAll('.page-tab').forEach(t=>t.classList.toggle('active', t.dataset.page===p));
+  document.getElementById('page-rooms').style.display = p==='rooms'?'block':'none';
+  document.getElementById('page-catalog').style.display = p==='catalog'?'block':'none';
+  document.getElementById('page-reports').style.display = p==='reports'?'block':'none';
+  if(p==='catalog') renderCatalogPage();
+  if(p==='reports') renderReportsPage();
+}
+document.getElementById('btn-public').onclick=()=>setMode('public');
+document.getElementById('btn-student').onclick=()=>setMode('student');
+document.getElementById('btn-editor').onclick=()=>setMode('editor');
+document.querySelectorAll('.page-tab').forEach(t=>t.onclick=()=>setPage(t.dataset.page));
+
+/* ---------------- init ---------------- */
+populateBuildingDropdown();
+populateRoomDropdown('');
+renderGrid();
+</script>
+</body>
+</html>
